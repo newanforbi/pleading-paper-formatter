@@ -71,6 +71,14 @@ const STATE = {
   recipients:      '',
   signerName:      '',
   signerTitle:     'Plaintiff, In Pro Per',
+  // Proof of Service fields
+  posServiceDate:  '',
+  posExecDate:     '',
+  posExecCity:     '',
+  posDocuments:    '',
+  posRecipients:   '',
+  posSignerName:   '',
+  posSignerTitle:  'Plaintiff, In Pro Per',
 };
 
 const FIELD_MAP = [
@@ -93,17 +101,65 @@ const FIELD_MAP = [
   ['cert-recipients',       'recipients'],
   ['cert-signer-name',      'signerName'],
   ['cert-signer-title',     'signerTitle'],
+  ['pos-service-date',      'posServiceDate'],
+  ['pos-exec-date',         'posExecDate'],
+  ['pos-exec-city',         'posExecCity'],
+  ['pos-documents',         'posDocuments'],
+  ['pos-recipients',        'posRecipients'],
+  ['pos-signer-name',       'posSignerName'],
+  ['pos-signer-title',      'posSignerTitle'],
 ];
+
+// ============================================================
+// LOCAL STORAGE PERSISTENCE
+// ============================================================
+const LS_KEY = 'pleading_state_v1';
+
+function saveState() {
+  try { localStorage.setItem(LS_KEY, JSON.stringify(STATE)); } catch (e) {}
+}
+
+function loadState() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(LS_KEY) || 'null');
+    if (saved) Object.assign(STATE, saved);
+  } catch (e) {}
+}
+
+function clearState() {
+  try { localStorage.removeItem(LS_KEY); } catch (e) {}
+  location.reload();
+}
+
+// ============================================================
+// DATE HELPER
+// ============================================================
+function todayLong() {
+  const d = new Date();
+  return d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+}
+
+// ============================================================
+// VALIDATION
+// ============================================================
+function validateState(state) {
+  const errors = [];
+  if (!state.plaintiff.trim())  errors.push('Plaintiff / Petitioner name is required.');
+  if (!state.courtName.trim())  errors.push('Court name is required.');
+  if (!state.caseNumber.trim()) errors.push('Case number is required.');
+  return errors;
+}
 
 // ============================================================
 // FIELD BINDING
 // ============================================================
 function bindFields() {
+  loadState();
   FIELD_MAP.forEach(([id, key]) => {
     const el = document.getElementById(id);
     if (!el) return;
-    STATE[key] = el.value;
-    el.addEventListener('input', () => { STATE[key] = el.value; });
+    el.value = STATE[key];                              // restore from STATE (loaded from storage)
+    el.addEventListener('input', () => { STATE[key] = el.value; saveState(); });
   });
 }
 
@@ -113,6 +169,17 @@ function bindFields() {
 function initCourtField() {
   const sel = document.getElementById('prof-court');
   const custom = document.getElementById('prof-court-custom');
+
+  // Restore saved court name to select/custom input
+  const saved = STATE.courtName;
+  const knownValues = Array.from(sel.options).map(o => o.value);
+  if (saved && !knownValues.includes(saved)) {
+    sel.value = '__custom__';
+    custom.value = saved;
+  } else if (saved) {
+    sel.value = saved;
+  }
+
   function syncCourt() {
     if (sel.value === '__custom__') {
       custom.style.display = '';
@@ -121,9 +188,10 @@ function initCourtField() {
       custom.style.display = 'none';
       STATE.courtName = sel.value;
     }
+    saveState();
   }
   sel.addEventListener('change', syncCourt);
-  custom.addEventListener('input', () => { STATE.courtName = custom.value; });
+  custom.addEventListener('input', () => { STATE.courtName = custom.value; saveState(); });
   syncCourt();
 }
 
@@ -736,7 +804,124 @@ async function buildCertificatePDF(state) {
 }
 
 // ============================================================
-// DOWNLOAD HELPER
+// BUILD PROOF OF SERVICE BY MAIL PDF
+// ============================================================
+async function buildProofOfServicePDF(state) {
+  const { PDFDocument, StandardFonts } = PDFLib;
+  const doc   = await PDFDocument.create();
+  const fR    = await doc.embedFont(StandardFonts.TimesRoman);
+  const fB    = await doc.embedFont(StandardFonts.TimesRomanBold);
+  const fI    = await doc.embedFont(StandardFonts.TimesRomanItalic);
+  const BLACK = PDFLib.rgb(0, 0, 0);
+
+  const { BODY_LEFT: BL, BODY_WIDTH: BW, BODY_TOP, BODY_BOT, LINE_H,
+          FS_TITLE, FS_BODY, FS_SMALL } = CL;
+
+  let page = doc.addPage([CL.PAGE_W, CL.PAGE_H]);
+  let y    = BODY_TOP;
+
+  function ensureSpace(n) {
+    if (y < BODY_BOT + n * LINE_H) { page = doc.addPage([CL.PAGE_W, CL.PAGE_H]); y = BODY_TOP; }
+  }
+  function drawLeft(text, font, size) {
+    ensureSpace(1);
+    const s = sanitize(text);
+    if (s) page.drawText(s, { x: BL, y, font, size, color: BLACK });
+    y -= LINE_H;
+  }
+  function drawCentered(text, font, size) {
+    ensureSpace(1);
+    const s = sanitize(text);
+    if (!s) { y -= LINE_H; return; }
+    let w; try { w = font.widthOfTextAtSize(s, size); } catch (e) { w = s.length * size * 0.55; }
+    page.drawText(s, { x: BL + (BW - w) / 2, y, font, size, color: BLACK });
+    y -= LINE_H;
+  }
+  function drawWrapped(text, font, size, indent) {
+    const lines = wrapText(text, font, size, BW - (indent || 0));
+    for (const line of lines) {
+      ensureSpace(1);
+      if (line) page.drawText(line, { x: BL + (indent || 0), y, font, size, color: BLACK });
+      y -= LINE_H;
+    }
+  }
+  function skip(n) { y -= LINE_H * (n || 1); }
+
+  // Title
+  drawCentered('PROOF OF SERVICE BY MAIL', fB, FS_TITLE);
+  skip(1);
+
+  // Case / Court header
+  const caseNo   = sanitize(state.caseNumber || '_______________');
+  const caseName = sanitize(state.plaintiff  || '');
+  drawLeft('Case Name: ' + caseName, fR, FS_BODY);
+  drawLeft('Case No.: '  + caseNo,   fR, FS_BODY);
+  let courtLine = state.courtName || '';
+  if (state.county) courtLine += (courtLine ? ', County of ' : 'County of ') + state.county;
+  if (courtLine) drawLeft(sanitize(courtLine), fR, FS_SMALL);
+  skip(1);
+
+  // Declaration intro
+  const declarant = sanitize(state.posSignerName || state.plaintiff || '_______________');
+  drawWrapped(`I, ${declarant}, declare:`, fR, FS_BODY, 0);
+  skip(1);
+
+  // Paragraph 1 — identity and capacity
+  drawWrapped('1.  I am over the age of eighteen (18) years and not a party to the above-entitled action. I am a resident of, or employed in, the county where the mailing occurred.', fR, FS_BODY, 0);
+  skip(1);
+
+  // Paragraph 2 — service date and documents
+  const svcDate = sanitize(state.posServiceDate || '_______________');
+  drawWrapped(`2.  On ${svcDate}, I served the following document(s):`, fR, FS_BODY, 0);
+  skip(0.5);
+  const docs = (state.posDocuments || '').split('\n').map(s => s.trim()).filter(Boolean);
+  for (const d of docs) drawLeft('    ' + d, fB, FS_BODY);
+  skip(1);
+
+  // Paragraph 3 — method
+  drawWrapped(
+    '3.  I served the above-named document(s) by enclosing a true copy in a sealed envelope addressed to each person whose name and address is listed below, and by placing each envelope for collection and mailing following ordinary business practices. I am readily familiar with the practice for collection and processing of correspondence for mailing. Under this practice, it would be deposited with the United States Postal Service on that same day in the ordinary course of business, with postage fully prepaid.',
+    fR, FS_BODY, 0
+  );
+  skip(1);
+
+  // Paragraph 4 — recipients
+  drawWrapped('4.  The envelope(s) were addressed and mailed as follows:', fR, FS_BODY, 0);
+  skip(0.5);
+  const recBlocks = (state.posRecipients || '').split(/\n\s*\n/).filter(b => b.trim());
+  for (const block of recBlocks) {
+    for (const line of block.split('\n').map(l => l.trim()).filter(Boolean)) {
+      drawLeft('    ' + line, fR, FS_BODY);
+    }
+    skip(0.5);
+  }
+
+  // Perjury declaration
+  skip(0.5);
+  const execDate = sanitize(state.posExecDate || '_______________');
+  const execCity = sanitize(state.posExecCity || '_______________');
+  drawWrapped(
+    `I declare under penalty of perjury under the laws of the State of California that the foregoing is true and correct. Executed on ${execDate}, at ${execCity}.`,
+    fI, FS_BODY, 0
+  );
+  skip(2);
+
+  // Signature block
+  ensureSpace(4);
+  const SIG_W  = 240;
+  page.drawLine({ start: { x: BL, y }, end: { x: BL + SIG_W, y }, thickness: 0.6, color: BLACK });
+  y -= LINE_H;
+  const sigName  = sanitize(state.posSignerName || state.plaintiff || '');
+  const sigTitle = sanitize(state.posSignerTitle || '');
+  if (sigName)  page.drawText(sigName,  { x: BL, y, font: fR, size: FS_SMALL, color: BLACK });
+  y -= LINE_H;
+  if (sigTitle) page.drawText(sigTitle, { x: BL, y, font: fR, size: FS_SMALL, color: BLACK });
+
+  return doc.save();
+}
+
+// ============================================================
+// PDF OUTPUT HELPERS
 // ============================================================
 function downloadPDF(bytes, filename) {
   const blob = new Blob([bytes], { type: 'application/pdf' });
@@ -748,45 +933,294 @@ function downloadPDF(bytes, filename) {
   setTimeout(() => URL.revokeObjectURL(url), 15000);
 }
 
+function openPDF(bytes) {
+  const blob = new Blob([bytes], { type: 'application/pdf' });
+  const url  = URL.createObjectURL(blob);
+  window.open(url, '_blank');
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+}
+
+// ============================================================
+// FORMAT TOOLBAR
+// ============================================================
+function initFormatToolbar() {
+  const ta = document.getElementById('pleading-body');
+  document.querySelectorAll('.fmt-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const fmt   = btn.dataset.fmt;
+      const start = ta.selectionStart;
+      const end   = ta.selectionEnd;
+      const text  = ta.value;
+      const sel   = text.slice(start, end);
+
+      let replacement = sel;
+      if (fmt === 'header') {
+        replacement = sel.toUpperCase();
+      } else if (fmt === 'list') {
+        // Prefix each non-empty line with "1. "
+        let counter = 1;
+        replacement = sel.split('\n').map(line =>
+          line.trim() ? (counter++) + '. ' + line.replace(/^\d+[\.\)]\s*/, '') : line
+        ).join('\n');
+      } else if (fmt === 'paragraph') {
+        // Strip list prefix if present
+        replacement = sel.split('\n').map(line =>
+          line.replace(/^\d+[\.\)]\s+/, '')
+        ).join('\n');
+      }
+
+      ta.setRangeText(replacement, start, end, 'select');
+      ta.dispatchEvent(new Event('input'));
+      ta.focus();
+    });
+  });
+}
+
+// ============================================================
+// NAMED CASE PROFILES
+// ============================================================
+const PROFILES_KEY = 'pleading_profiles_v1';
+
+function loadProfiles() {
+  try { return JSON.parse(localStorage.getItem(PROFILES_KEY) || '{}'); } catch (e) { return {}; }
+}
+
+function saveProfiles(profiles) {
+  try { localStorage.setItem(PROFILES_KEY, JSON.stringify(profiles)); } catch (e) {}
+}
+
+function refreshProfileSelect() {
+  const sel = document.getElementById('profile-select');
+  const profiles = loadProfiles();
+  const current = sel.value;
+  sel.innerHTML = '<option value="">— select —</option>';
+  for (const name of Object.keys(profiles).sort()) {
+    const opt = document.createElement('option');
+    opt.value = name;
+    opt.textContent = name;
+    sel.appendChild(opt);
+  }
+  if (current && profiles[current]) sel.value = current;
+}
+
+function initProfiles() {
+  refreshProfileSelect();
+
+  document.getElementById('btn-profile-save').addEventListener('click', () => {
+    const name = prompt('Save profile as:', document.getElementById('profile-select').value || '');
+    if (!name || !name.trim()) return;
+    const profiles = loadProfiles();
+    profiles[name.trim()] = { ...STATE };
+    saveProfiles(profiles);
+    refreshProfileSelect();
+    document.getElementById('profile-select').value = name.trim();
+  });
+
+  document.getElementById('btn-profile-load').addEventListener('click', () => {
+    const name = document.getElementById('profile-select').value;
+    if (!name) return;
+    const profiles = loadProfiles();
+    if (!profiles[name]) return;
+    Object.assign(STATE, profiles[name]);
+    saveState();
+    applyStateToFields();
+  });
+
+  document.getElementById('btn-profile-delete').addEventListener('click', () => {
+    const name = document.getElementById('profile-select').value;
+    if (!name) return;
+    if (!confirm(`Delete profile "${name}"?`)) return;
+    const profiles = loadProfiles();
+    delete profiles[name];
+    saveProfiles(profiles);
+    refreshProfileSelect();
+  });
+
+  document.getElementById('btn-profile-export').addEventListener('click', () => {
+    const name = document.getElementById('profile-select').value || 'profile';
+    const data = JSON.stringify({ ...STATE }, null, 2);
+    const blob = new Blob([data], { type: 'application/json' });
+    const url  = URL.createObjectURL(blob);
+    const a    = Object.assign(document.createElement('a'), {
+      href: url, download: name.replace(/\s+/g, '_') + '.json'
+    });
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+  });
+
+  document.getElementById('profile-import-input').addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const imported = JSON.parse(ev.target.result);
+        Object.assign(STATE, imported);
+        saveState();
+        applyStateToFields();
+        e.target.value = '';
+      } catch (err) {
+        alert('Invalid JSON file.');
+      }
+    };
+    reader.readAsText(file);
+  });
+}
+
+function applyStateToFields() {
+  FIELD_MAP.forEach(([id, key]) => {
+    const el = document.getElementById(id);
+    if (el) el.value = STATE[key];
+  });
+  // Restore court select
+  const sel    = document.getElementById('prof-court');
+  const custom = document.getElementById('prof-court-custom');
+  const knownValues = Array.from(sel.options).map(o => o.value);
+  if (STATE.courtName && !knownValues.includes(STATE.courtName)) {
+    sel.value    = '__custom__';
+    custom.value = STATE.courtName;
+    custom.style.display = '';
+  } else {
+    sel.value = STATE.courtName || sel.options[1]?.value || '';
+    custom.style.display = 'none';
+  }
+}
+
 // ============================================================
 // BUTTON HANDLERS
 // ============================================================
 function initButtons() {
-  async function generate(btnId, statusId, buildFn, filenameFn) {
+  async function generate(btnId, openBtnId, statusId, buildFn, filenameFn, mode) {
     const btn    = document.getElementById(btnId);
+    const openBtn = openBtnId ? document.getElementById(openBtnId) : null;
     const status = document.getElementById(statusId);
-    btn.disabled = true;
+
+    // Validation
+    const errors = validateState(STATE);
+    if (errors.length) {
+      status.textContent = errors[0];
+      status.className   = 'status-msg error';
+      return;
+    }
+
+    const active = mode === 'open' ? openBtn : btn;
+    if (active) active.disabled = true;
+    if (btn)    btn.disabled    = true;
+    if (openBtn) openBtn.disabled = true;
     status.textContent = 'Generating...';
     status.className   = 'status-msg';
     try {
       const bytes = await buildFn(STATE);
-      downloadPDF(bytes, filenameFn(STATE));
-      status.textContent = 'PDF downloaded.';
-      status.className   = 'status-msg success';
+      if (mode === 'open') {
+        openPDF(bytes);
+        status.textContent = 'Opened in new tab.';
+      } else {
+        downloadPDF(bytes, filenameFn(STATE));
+        status.textContent = 'PDF downloaded.';
+      }
+      status.className = 'status-msg success';
     } catch (err) {
       status.textContent = 'Error: ' + err.message;
       status.className   = 'status-msg error';
       console.error(err);
     } finally {
-      btn.disabled = false;
+      if (btn)     btn.disabled     = false;
+      if (openBtn) openBtn.disabled = false;
     }
   }
 
+  const pleadingFile = s => 'Pleading_Paper_' + (s.plaintiff || 'Document').replace(/\s+/g, '_') + '.pdf';
+  const certFile     = s => 'Certificate_of_Service_' + (s.plaintiff || 'Document').replace(/\s+/g, '_') + '.pdf';
+
   document.getElementById('btn-generate-pleading').addEventListener('click', () =>
-    generate(
-      'btn-generate-pleading', 'pleading-status',
-      buildPleadingPDF,
-      s => 'Pleading_Paper_' + (s.plaintiff || 'Document').replace(/\s+/g, '_') + '.pdf'
-    )
+    generate('btn-generate-pleading', 'btn-open-pleading', 'pleading-status', buildPleadingPDF, pleadingFile, 'download')
+  );
+  document.getElementById('btn-open-pleading').addEventListener('click', () =>
+    generate('btn-generate-pleading', 'btn-open-pleading', 'pleading-status', buildPleadingPDF, pleadingFile, 'open')
   );
 
   document.getElementById('btn-generate-cert').addEventListener('click', () =>
-    generate(
-      'btn-generate-cert', 'cert-status',
-      buildCertificatePDF,
-      s => 'Certificate_of_Service_' + (s.plaintiff || 'Document').replace(/\s+/g, '_') + '.pdf'
-    )
+    generate('btn-generate-cert', 'btn-open-cert', 'cert-status', buildCertificatePDF, certFile, 'download')
   );
+  document.getElementById('btn-open-cert').addEventListener('click', () =>
+    generate('btn-generate-cert', 'btn-open-cert', 'cert-status', buildCertificatePDF, certFile, 'open')
+  );
+
+  const posFile = s => 'Proof_of_Service_' + (s.plaintiff || 'Document').replace(/\s+/g, '_') + '.pdf';
+  document.getElementById('btn-generate-pos').addEventListener('click', () =>
+    generate('btn-generate-pos', 'btn-open-pos', 'pos-status', buildProofOfServicePDF, posFile, 'download')
+  );
+  document.getElementById('btn-open-pos').addEventListener('click', () =>
+    generate('btn-generate-pos', 'btn-open-pos', 'pos-status', buildProofOfServicePDF, posFile, 'open')
+  );
+  document.getElementById('btn-preview-pos').addEventListener('click', () =>
+    showPreview('pos-preview-pane', 'pos-preview-frame', 'pos-status', buildProofOfServicePDF)
+  );
+
+  // Today buttons for date fields
+  document.getElementById('btn-today-service').addEventListener('click', () => {
+    const el = document.getElementById('cert-service-date');
+    el.value = todayLong();
+    STATE.serviceDate = el.value;
+    saveState();
+  });
+  document.getElementById('btn-today-exec').addEventListener('click', () => {
+    const el = document.getElementById('cert-exec-date');
+    el.value = todayLong();
+    STATE.execDate = el.value;
+    saveState();
+  });
+  document.getElementById('btn-today-pos').addEventListener('click', () => {
+    const el = document.getElementById('pos-service-date');
+    el.value = todayLong();
+    STATE.posServiceDate = el.value;
+    saveState();
+  });
+  document.getElementById('btn-today-pos-exec').addEventListener('click', () => {
+    const el = document.getElementById('pos-exec-date');
+    el.value = todayLong();
+    STATE.posExecDate = el.value;
+    saveState();
+  });
+
+  // Preview buttons
+  async function showPreview(paneId, frameId, statusId, buildFn) {
+    const pane   = document.getElementById(paneId);
+    const frame  = document.getElementById(frameId);
+    const status = document.getElementById(statusId);
+    const errors = validateState(STATE);
+    if (errors.length) {
+      status.textContent = errors[0];
+      status.className   = 'status-msg error';
+      return;
+    }
+    status.textContent = 'Generating preview...';
+    status.className   = 'status-msg';
+    try {
+      const bytes = await buildFn(STATE);
+      const blob  = new Blob([bytes], { type: 'application/pdf' });
+      const url   = URL.createObjectURL(blob);
+      if (frame.src && frame.src.startsWith('blob:')) URL.revokeObjectURL(frame.src);
+      frame.src = url;
+      pane.style.display = '';
+      status.textContent = '';
+    } catch (err) {
+      status.textContent = 'Error: ' + err.message;
+      status.className   = 'status-msg error';
+    }
+  }
+
+  document.getElementById('btn-preview-pleading').addEventListener('click', () =>
+    showPreview('pleading-preview-pane', 'pleading-preview-frame', 'pleading-status', buildPleadingPDF)
+  );
+  document.getElementById('btn-preview-cert').addEventListener('click', () =>
+    showPreview('cert-preview-pane', 'cert-preview-frame', 'cert-status', buildCertificatePDF)
+  );
+
+  // Clear / New Case
+  document.getElementById('btn-clear').addEventListener('click', () => {
+    if (confirm('Clear all fields and start a new case? This cannot be undone.')) clearState();
+  });
 }
 
 // ============================================================
@@ -801,5 +1235,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initTabs();
   bindFields();
   initCourtField();
+  initProfiles();
+  initFormatToolbar();
   initButtons();
 });
