@@ -53,7 +53,7 @@ const CL = {
 // ============================================================
 const STATE = {
   plaintiff:       '',
-  cdcNumber:       '',
+  address:         '',
   phone:           '',
   email:           '',
   petitionerLabel: 'Petitioner, In Propria Persona',
@@ -75,7 +75,7 @@ const STATE = {
 
 const FIELD_MAP = [
   ['prof-plaintiff',        'plaintiff'],
-  ['prof-cdc',              'cdcNumber'],
+  ['prof-address',          'address'],
   ['prof-phone',            'phone'],
   ['prof-email',            'email'],
   ['prof-petitioner-label', 'petitionerLabel'],
@@ -258,7 +258,11 @@ function buildCaptionLines(state, fonts) {
 
   // Top-left: filer info
   if (state.plaintiff)       lines.push(tl(state.plaintiff,       fonts.r, PP.FONT_SIZE, PP.CONTENT_LEFT));
-  if (state.cdcNumber)       lines.push(tl('CDC No. ' + state.cdcNumber, fonts.r, PP.FONT_SIZE, PP.CONTENT_LEFT));
+  if (state.address) {
+    for (const addrLine of state.address.split('\n').map(l => l.trim()).filter(Boolean)) {
+      lines.push(tl(addrLine, fonts.r, PP.FONT_SIZE, PP.CONTENT_LEFT));
+    }
+  }
   if (state.phone)           lines.push(tl(state.phone,           fonts.r, PP.FONT_SIZE, PP.CONTENT_LEFT));
   if (state.email)           lines.push(tl(state.email,           fonts.r, PP.FONT_SIZE, PP.CONTENT_LEFT));
   if (state.petitionerLabel) lines.push(tl(state.petitionerLabel, fonts.r, PP.FONT_SIZE, PP.CONTENT_LEFT));
@@ -289,7 +293,11 @@ function buildLeftColumn(state) {
   const rows = [];
   rows.push({ text: 'In re:', bold: false });
   if (state.plaintiff)  rows.push({ text: state.plaintiff + ',',           bold: false });
-  if (state.cdcNumber)  rows.push({ text: 'CDC No. ' + state.cdcNumber + ',', bold: false });
+  if (state.address) {
+    for (const addrLine of state.address.split('\n').map(l => l.trim()).filter(Boolean)) {
+      rows.push({ text: addrLine, bold: false });
+    }
+  }
   rows.push({ text: '               Petitioner,', bold: false });
 
   const respLines = state.respondents
