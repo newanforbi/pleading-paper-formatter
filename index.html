@@ -18,13 +18,26 @@
       <button class="tab-btn active" data-tab="profile">Case Profile</button>
       <button class="tab-btn" data-tab="pleading">Pleading Paper</button>
       <button class="tab-btn" data-tab="certificate">Certificate of Service</button>
+      <button class="tab-btn" data-tab="pos">Proof of Service</button>
     </nav>
 
     <main class="tab-content">
 
       <!-- TAB 1: CASE PROFILE -->
       <section id="tab-profile" class="tab-pane tab-active">
-        <p class="tab-note">Fill this profile once — it populates both documents automatically.</p>
+        <div class="profiles-bar">
+          <label for="profile-select" class="profiles-label">Saved Profiles</label>
+          <select id="profile-select" class="profile-select"><option value="">— select —</option></select>
+          <button id="btn-profile-load"   class="btn-secondary btn-small">Load</button>
+          <button id="btn-profile-save"   class="btn-secondary btn-small">Save As…</button>
+          <button id="btn-profile-delete" class="btn-secondary btn-small btn-danger-outline">Delete</button>
+          <button id="btn-profile-export" class="btn-secondary btn-small">Export JSON</button>
+          <label class="btn-secondary btn-small" style="cursor:pointer">Import JSON<input id="profile-import-input" type="file" accept=".json" style="display:none"></label>
+        </div>
+        <div class="tab-note profile-note">
+          <span>Fill this profile once — it populates both documents automatically.</span>
+          <button id="btn-clear" class="btn-secondary btn-small">Clear / New Case</button>
+        </div>
         <div class="field-grid">
 
           <div class="field-group field-wide">
@@ -105,22 +118,31 @@
       <!-- TAB 2: PLEADING PAPER -->
       <section id="tab-pleading" class="tab-pane">
         <div class="tab-toolbar">
-          <button id="btn-generate-pleading" class="btn-primary">Generate PDF</button>
+          <button id="btn-generate-pleading" class="btn-primary">Download PDF</button>
+          <button id="btn-open-pleading" class="btn-secondary">Open / Print</button>
+          <button id="btn-preview-pleading" class="btn-secondary">Preview</button>
           <span id="pleading-status" class="status-msg"></span>
         </div>
-        <div class="field-group">
-          <label for="pleading-body">Document Body</label>
-          <p class="field-hint">
-            ALL CAPS lines &rarr; centered bold header &nbsp;&middot;&nbsp;
-            Lines starting with <code>1.</code> or <code>&bull;</code> &rarr; list item &nbsp;&middot;&nbsp;
-            Everything else &rarr; paragraph with first-line indent
-          </p>
-          <textarea id="pleading-body" class="body-textarea" rows="32"
-            placeholder="I. JURISDICTION AND VENUE
+        <div class="preview-layout">
+          <div class="field-group preview-editor">
+            <label for="pleading-body">Document Body</label>
+            <div class="format-toolbar">
+              <button class="fmt-btn" data-fmt="header"    type="button">Header</button>
+              <button class="fmt-btn" data-fmt="list"      type="button">List Item</button>
+              <button class="fmt-btn" data-fmt="paragraph" type="button">Paragraph</button>
+              <span class="fmt-hint">Header = ALL CAPS &middot; List = <code>1.</code> prefix &middot; Paragraph = plain text</span>
+            </div>
+            <textarea id="pleading-body" class="body-textarea" rows="32"
+              placeholder="I. JURISDICTION AND VENUE
 
 1. This Court has jurisdiction pursuant to California Penal Code section 1473(a), which authorizes habeas corpus relief for any person unlawfully restrained of liberty.
 
 Petitioner respectfully submits the following..."></textarea>
+          </div>
+          <div id="pleading-preview-pane" class="preview-pane" style="display:none">
+            <div class="preview-pane-label">Preview</div>
+            <iframe id="pleading-preview-frame" class="preview-frame"></iframe>
+          </div>
         </div>
       </section>
 
@@ -130,12 +152,18 @@ Petitioner respectfully submits the following..."></textarea>
 
           <div class="field-group">
             <label for="cert-service-date">Date of Service</label>
-            <input type="text" id="cert-service-date" placeholder="e.g. March 18, 2026">
+            <div class="input-with-btn">
+              <input type="text" id="cert-service-date" placeholder="e.g. March 18, 2026">
+              <button id="btn-today-service" class="btn-today" type="button">Today</button>
+            </div>
           </div>
 
           <div class="field-group">
             <label for="cert-exec-date">Execution Date</label>
-            <input type="text" id="cert-exec-date" placeholder="e.g. March 18, 2026">
+            <div class="input-with-btn">
+              <input type="text" id="cert-exec-date" placeholder="e.g. March 18, 2026">
+              <button id="btn-today-exec" class="btn-today" type="button">Today</button>
+            </div>
           </div>
 
           <div class="field-group field-wide">
@@ -168,8 +196,76 @@ Petitioner respectfully submits the following..."></textarea>
         </div>
 
         <div class="tab-toolbar" style="margin-top:1.5rem">
-          <button id="btn-generate-cert" class="btn-primary">Generate PDF</button>
+          <button id="btn-generate-cert" class="btn-primary">Download PDF</button>
+          <button id="btn-open-cert" class="btn-secondary">Open / Print</button>
+          <button id="btn-preview-cert" class="btn-secondary">Preview</button>
           <span id="cert-status" class="status-msg"></span>
+        </div>
+        <div id="cert-preview-pane" class="preview-pane" style="display:none;margin-top:1rem">
+          <div class="preview-pane-label">Preview</div>
+          <iframe id="cert-preview-frame" class="preview-frame"></iframe>
+        </div>
+      </section>
+
+      <!-- TAB 4: PROOF OF SERVICE BY MAIL -->
+      <section id="tab-pos" class="tab-pane">
+        <p class="tab-note">Proof of Service by Mail — uses Case Profile data plus the fields below.</p>
+        <div class="field-grid">
+
+          <div class="field-group">
+            <label for="pos-service-date">Date of Service</label>
+            <div class="input-with-btn">
+              <input type="text" id="pos-service-date" placeholder="e.g. March 18, 2026">
+              <button id="btn-today-pos" class="btn-today" type="button">Today</button>
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label for="pos-exec-date">Execution Date</label>
+            <div class="input-with-btn">
+              <input type="text" id="pos-exec-date" placeholder="e.g. March 18, 2026">
+              <button id="btn-today-pos-exec" class="btn-today" type="button">Today</button>
+            </div>
+          </div>
+
+          <div class="field-group field-wide">
+            <label for="pos-exec-city">Execution City &amp; State</label>
+            <input type="text" id="pos-exec-city" placeholder="e.g. Stockton, California">
+          </div>
+
+          <div class="field-group field-wide">
+            <label for="pos-documents">Documents Served <span class="field-hint-inline">(one per line)</span></label>
+            <textarea id="pos-documents" rows="4"
+              placeholder="PETITION FOR WRIT OF HABEAS CORPUS&#10;MEMORANDUM OF POINTS AND AUTHORITIES"></textarea>
+          </div>
+
+          <div class="field-group field-wide">
+            <label for="pos-recipients">Recipients <span class="field-hint-inline">(blank line between parties)</span></label>
+            <textarea id="pos-recipients" rows="6"
+              placeholder="Jane Smith, Deputy Attorney General&#10;Office of the Attorney General&#10;1300 I Street&#10;Sacramento, CA 95814"></textarea>
+          </div>
+
+          <div class="field-group">
+            <label for="pos-signer-name">Signer Name</label>
+            <input type="text" id="pos-signer-name" placeholder="Leave blank to use Plaintiff Name">
+          </div>
+
+          <div class="field-group">
+            <label for="pos-signer-title">Signer Title</label>
+            <input type="text" id="pos-signer-title" value="Plaintiff, In Pro Per">
+          </div>
+
+        </div>
+
+        <div class="tab-toolbar" style="margin-top:1.5rem">
+          <button id="btn-generate-pos" class="btn-primary">Download PDF</button>
+          <button id="btn-open-pos" class="btn-secondary">Open / Print</button>
+          <button id="btn-preview-pos" class="btn-secondary">Preview</button>
+          <span id="pos-status" class="status-msg"></span>
+        </div>
+        <div id="pos-preview-pane" class="preview-pane" style="display:none;margin-top:1rem">
+          <div class="preview-pane-label">Preview</div>
+          <iframe id="pos-preview-frame" class="preview-frame"></iframe>
         </div>
       </section>
 
@@ -177,5 +273,10 @@ Petitioner respectfully submits the following..."></textarea>
   </div>
 
   <script src="app.js" defer></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js').catch(() => {});
+    }
+  </script>
 </body>
 </html>
