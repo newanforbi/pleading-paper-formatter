@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Legal Pleading Paper Formatter</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+</head>
+<body>
+  <div class="app-wrapper">
+    <header class="app-header">
+      <h1>Legal Pleading Paper Formatter</h1>
+      <p class="app-subtitle">California State Court &middot; pdf-lib &middot; In Propria Persona</p>
+    </header>
+
+    <nav class="tab-bar">
+      <button class="tab-btn active" data-tab="profile">Case Profile</button>
+      <button class="tab-btn" data-tab="pleading">Pleading Paper</button>
+      <button class="tab-btn" data-tab="certificate">Certificate of Service</button>
+    </nav>
+
+    <main class="tab-content">
+
+      <!-- TAB 1: CASE PROFILE -->
+      <section id="tab-profile" class="tab-pane tab-active">
+        <p class="tab-note">Fill this profile once — it populates both documents automatically.</p>
+        <div class="field-grid">
+
+          <div class="field-group field-wide">
+            <label for="prof-plaintiff">Plaintiff / Petitioner Full Name</label>
+            <input type="text" id="prof-plaintiff" placeholder="FULL NAME IN ALL CAPS">
+          </div>
+
+          <div class="field-group">
+            <label for="prof-cdc">CDC / Booking Number</label>
+            <input type="text" id="prof-cdc" placeholder="e.g. BF3571">
+          </div>
+
+          <div class="field-group">
+            <label for="prof-phone">Phone</label>
+            <input type="tel" id="prof-phone" placeholder="(000) 000-0000">
+          </div>
+
+          <div class="field-group">
+            <label for="prof-email">Email</label>
+            <input type="email" id="prof-email" placeholder="email@example.com">
+          </div>
+
+          <div class="field-group">
+            <label for="prof-petitioner-label">Petitioner Label</label>
+            <input type="text" id="prof-petitioner-label" value="Petitioner, In Propria Persona">
+          </div>
+
+          <div class="field-group field-wide">
+            <label for="prof-court">Court Name</label>
+            <input type="text" id="prof-court" value="SUPERIOR COURT OF THE STATE OF CALIFORNIA">
+          </div>
+
+          <div class="field-group">
+            <label for="prof-county">County</label>
+            <input type="text" id="prof-county" placeholder="e.g. SANTA CLARA">
+          </div>
+
+          <div class="field-group">
+            <label for="prof-case-number">Case Number</label>
+            <input type="text" id="prof-case-number" placeholder="______________">
+          </div>
+
+          <div class="field-group field-wide">
+            <label for="prof-respondents">Respondents / Defendants <span class="field-hint-inline">(one per line)</span></label>
+            <textarea id="prof-respondents" rows="3" placeholder="JANE DOE, Warden&#10;JOHN SMITH, Secretary"></textarea>
+          </div>
+
+          <div class="field-group field-wide">
+            <label for="prof-doc-type">Document Type <span class="field-hint-inline">(caption right column, one line per entry)</span></label>
+            <textarea id="prof-doc-type" rows="3" placeholder="PETITION FOR WRIT&#10;OF HABEAS CORPUS&#10;(Cal. Penal Code § 1473 et seq.)"></textarea>
+          </div>
+
+          <div class="field-group field-wide">
+            <label for="prof-footer-title">Footer Title <span class="field-hint-inline">(appears on every page of the pleading)</span></label>
+            <input type="text" id="prof-footer-title" placeholder="PETITION FOR WRIT OF HABEAS CORPUS -- IN RE SMITH">
+          </div>
+
+        </div>
+      </section>
+
+      <!-- TAB 2: PLEADING PAPER -->
+      <section id="tab-pleading" class="tab-pane">
+        <div class="tab-toolbar">
+          <button id="btn-generate-pleading" class="btn-primary">Generate PDF</button>
+          <span id="pleading-status" class="status-msg"></span>
+        </div>
+        <div class="field-group">
+          <label for="pleading-body">Document Body</label>
+          <p class="field-hint">
+            ALL CAPS lines &rarr; centered bold header &nbsp;&middot;&nbsp;
+            Lines starting with <code>1.</code> or <code>&bull;</code> &rarr; list item &nbsp;&middot;&nbsp;
+            Everything else &rarr; paragraph with first-line indent
+          </p>
+          <textarea id="pleading-body" class="body-textarea" rows="32"
+            placeholder="I. JURISDICTION AND VENUE
+
+1. This Court has jurisdiction pursuant to California Penal Code section 1473(a), which authorizes habeas corpus relief for any person unlawfully restrained of liberty.
+
+Petitioner respectfully submits the following..."></textarea>
+        </div>
+      </section>
+
+      <!-- TAB 3: CERTIFICATE OF SERVICE -->
+      <section id="tab-certificate" class="tab-pane">
+        <div class="field-grid">
+
+          <div class="field-group">
+            <label for="cert-service-date">Date of Service</label>
+            <input type="text" id="cert-service-date" placeholder="e.g. March 18, 2026">
+          </div>
+
+          <div class="field-group">
+            <label for="cert-exec-date">Execution Date</label>
+            <input type="text" id="cert-exec-date" placeholder="e.g. March 18, 2026">
+          </div>
+
+          <div class="field-group field-wide">
+            <label for="cert-exec-city">Execution City &amp; State</label>
+            <input type="text" id="cert-exec-city" placeholder="e.g. Stockton, California">
+          </div>
+
+          <div class="field-group field-wide">
+            <label for="cert-documents">Documents Served <span class="field-hint-inline">(one per line)</span></label>
+            <textarea id="cert-documents" rows="4"
+              placeholder="PLAINTIFF'S MOTION FOR SUMMARY JUDGMENT&#10;SUPPORTING MEMORANDUM OF LAW IN SUPPORT THEREOF"></textarea>
+          </div>
+
+          <div class="field-group field-wide">
+            <label for="cert-recipients">Recipients <span class="field-hint-inline">(blank line between parties)</span></label>
+            <textarea id="cert-recipients" rows="6"
+              placeholder="Jane Smith, Deputy Attorney General&#10;Office of the Attorney General&#10;1300 I Street&#10;Sacramento, CA 95814"></textarea>
+          </div>
+
+          <div class="field-group">
+            <label for="cert-signer-name">Signer Name</label>
+            <input type="text" id="cert-signer-name" placeholder="Leave blank to use Plaintiff Name">
+          </div>
+
+          <div class="field-group">
+            <label for="cert-signer-title">Signer Title</label>
+            <input type="text" id="cert-signer-title" value="Plaintiff, In Pro Per">
+          </div>
+
+        </div>
+
+        <div class="tab-toolbar" style="margin-top:1.5rem">
+          <button id="btn-generate-cert" class="btn-primary">Generate PDF</button>
+          <span id="cert-status" class="status-msg"></span>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script src="app.js" defer></script>
+</body>
+</html>
