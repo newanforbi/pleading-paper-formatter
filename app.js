@@ -79,7 +79,7 @@ const FIELD_MAP = [
   ['prof-phone',            'phone'],
   ['prof-email',            'email'],
   ['prof-petitioner-label', 'petitionerLabel'],
-  ['prof-court',            'courtName'],
+  // prof-court handled separately by initCourtField()
   ['prof-county',           'county'],
   ['prof-case-number',      'caseNumber'],
   ['prof-respondents',      'respondents'],
@@ -105,6 +105,26 @@ function bindFields() {
     STATE[key] = el.value;
     el.addEventListener('input', () => { STATE[key] = el.value; });
   });
+}
+
+// ============================================================
+// COURT FIELD BINDING (select + optional custom input)
+// ============================================================
+function initCourtField() {
+  const sel = document.getElementById('prof-court');
+  const custom = document.getElementById('prof-court-custom');
+  function syncCourt() {
+    if (sel.value === '__custom__') {
+      custom.style.display = '';
+      STATE.courtName = custom.value;
+    } else {
+      custom.style.display = 'none';
+      STATE.courtName = sel.value;
+    }
+  }
+  sel.addEventListener('change', syncCourt);
+  custom.addEventListener('input', () => { STATE.courtName = custom.value; });
+  syncCourt();
 }
 
 // ============================================================
@@ -780,5 +800,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   initTabs();
   bindFields();
+  initCourtField();
   initButtons();
 });
