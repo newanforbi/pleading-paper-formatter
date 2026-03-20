@@ -11,7 +11,7 @@
   <div class="app-wrapper">
     <header class="app-header">
       <h1>Legal Pleading Paper Formatter</h1>
-      <p class="app-subtitle">California State Court &middot; pdf-lib &middot; In Propria Persona</p>
+      <p class="app-subtitle">State &amp; Federal Courts &middot; pdf-lib &middot; In Propria Persona</p>
     </header>
 
     <nav class="tab-bar">
@@ -54,7 +54,24 @@
 
           <div class="field-group field-wide">
             <label for="prof-court">Court Name</label>
-            <input type="text" id="prof-court" value="SUPERIOR COURT OF THE STATE OF CALIFORNIA">
+            <select id="prof-court">
+              <optgroup label="California State Courts">
+                <option value="SUPERIOR COURT OF THE STATE OF CALIFORNIA" selected>Superior Court of California</option>
+              </optgroup>
+              <optgroup label="U.S. District Courts — California (9th Circuit)">
+                <option value="UNITED STATES DISTRICT COURT, EASTERN DISTRICT OF CALIFORNIA">Eastern District of California (EDCA)</option>
+                <option value="UNITED STATES DISTRICT COURT, CENTRAL DISTRICT OF CALIFORNIA">Central District of California (CDCA)</option>
+                <option value="UNITED STATES DISTRICT COURT, NORTHERN DISTRICT OF CALIFORNIA">Northern District of California (NDCA)</option>
+                <option value="UNITED STATES DISTRICT COURT, SOUTHERN DISTRICT OF CALIFORNIA">Southern District of California (SDCA)</option>
+              </optgroup>
+              <optgroup label="U.S. Courts of Appeals">
+                <option value="UNITED STATES COURT OF APPEALS, NINTH CIRCUIT">Ninth Circuit Court of Appeals</option>
+              </optgroup>
+              <optgroup label="Other">
+                <option value="__custom__">Other / Custom…</option>
+              </optgroup>
+            </select>
+            <input type="text" id="prof-court-custom" placeholder="Enter court name" style="display:none;margin-top:6px">
           </div>
 
           <div class="field-group">
