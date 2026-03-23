@@ -174,11 +174,12 @@ hr {
 }
 
 label {
-  font-size: 0.72rem;
+  font-size: 10px;
   text-transform: uppercase;
-  letter-spacing: 0.09em;
+  letter-spacing: 0.04em;
   color: var(--ink-mid);
   font-weight: bold;
+  font-family: Arial, Tahoma, sans-serif;
 }
 
 input[type="text"],
@@ -300,16 +301,20 @@ textarea {
 /* ── STATUS ──────────────────────────────────────────── */
 .status-msg {
   font-style: italic;
-  font-size: 0.85rem;
+  font-size: 11px;
   color: var(--ink-light);
 }
 
 .status-msg.error {
-  color: #8b1a1a;
+  color: #cc0000;
+  font-weight: bold;
+  font-style: normal;
 }
 
 .status-msg.success {
-  color: #1a5c1a;
+  color: #006600;
+  font-weight: bold;
+  font-style: normal;
 }
 
 /* ── FORMAT TOOLBAR ──────────────────────────────────── */
@@ -417,14 +422,14 @@ textarea {
   background: var(--cream-dark);
 }
 .preview-pane-label {
-  font-size: 0.68rem;
+  font-size: 10px;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--ink-light);
+  letter-spacing: 0.06em;
+  color: #ffffff;
   font-weight: bold;
-  padding: 0.4rem 0.75rem;
-  border-bottom: 1px solid var(--rule);
-  background: var(--cream-light);
+  padding: 3px 8px;
+  background: var(--accent);
+  border-bottom: 1px solid var(--rule-dark);
 }
 .preview-frame {
   width: 100%;
@@ -520,86 +525,119 @@ textarea {
 
 /* ── FORMAT GUIDE ────────────────────────────────────── */
 .format-guide {
-  margin-top: 0.6rem;
-  border: 1px solid var(--rule);
+  margin-top: 6px;
+  border-top:    1px solid var(--btn-sh);
+  border-left:   1px solid var(--btn-sh);
+  border-right:  1px solid var(--btn-hi);
+  border-bottom: 1px solid var(--btn-hi);
   background: var(--cream-light);
-  font-size: 0.82rem;
+  font-size: 11px;
 }
 .format-guide summary {
-  padding: 0.4em 0.75em;
+  padding: 4px 8px;
   cursor: pointer;
-  color: var(--ink-light);
-  font-style: italic;
-  letter-spacing: 0.04em;
+  background: var(--accent);
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: bold;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
   list-style: none;
   user-select: none;
 }
 .format-guide summary::-webkit-details-marker { display: none; }
-.format-guide summary::before { content: '▸ '; font-style: normal; }
-details[open].format-guide summary::before { content: '▾ '; }
+.format-guide summary::before { content: '+ '; }
+details[open].format-guide summary::before { content: '- '; }
 .format-guide .guide-body {
-  padding: 0.5em 0.75em 0.75em;
+  padding: 6px 8px 8px;
   border-top: 1px solid var(--rule);
 }
 .guide-intro {
-  margin-bottom: 0.45em;
+  margin-bottom: 6px;
   color: var(--ink-mid);
-  font-size: 0.8rem;
+  font-size: 11px;
 }
 .format-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.78rem;
+  font-size: 11px;
 }
 .format-table th {
   text-align: left;
   color: var(--ink-light);
   font-weight: bold;
-  font-size: 0.7rem;
+  font-size: 10px;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  padding: 0.2em 0.5em;
+  letter-spacing: 0.05em;
+  padding: 2px 6px;
   border-bottom: 1px solid var(--rule);
+  background: var(--cream-dark);
 }
 .format-table td {
-  padding: 0.25em 0.5em;
+  padding: 3px 6px;
   vertical-align: top;
   color: var(--ink-mid);
+  border-bottom: 1px solid var(--cream-dark);
 }
 .format-table td code {
   font-family: var(--font-mono);
-  font-size: 0.78rem;
+  font-size: 10px;
   background: var(--cream-dark);
-  padding: 0 0.2em;
+  padding: 0 3px;
+  border: 1px solid var(--rule);
 }
 .guide-tip {
-  margin-top: 0.5em;
-  font-size: 0.75rem;
+  margin-top: 6px;
+  font-size: 10px;
   color: var(--ink-light);
   font-style: italic;
 }
 
 /* ── LINE COUNTER ────────────────────────────────────── */
 .line-counter {
-  margin-top: 0.3rem;
-  font-size: 0.74rem;
+  margin-top: 3px;
+  font-size: 10px;
   color: var(--ink-light);
   font-family: var(--font-serif);
   font-style: italic;
-  min-height: 1.1em;
+  min-height: 1em;
 }
-.line-counter.warn { color: #a04510; }
+.line-counter.warn { color: #aa4400; font-weight: bold; }
 
 /* ── CHAR COUNT BADGE ────────────────────────────────── */
 .char-count {
-  font-size: 0.65rem;
+  font-size: 9px;
   color: var(--ink-light);
   font-style: normal;
   font-weight: normal;
-  margin-left: 0.3em;
+  margin-left: 3px;
   letter-spacing: 0;
 }
-.char-count.warn { color: #c04000; font-weight: bold; }
+.char-count.warn { color: #cc0000; font-weight: bold; }
+
+/* ── CLASSIC SCROLLBAR (WebKit) ──────────────────────── */
+::-webkit-scrollbar { width: 16px; height: 16px; }
+::-webkit-scrollbar-track {
+  background: var(--cream-dark);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--cream);
+  border-top:    2px solid var(--btn-hi);
+  border-left:   2px solid var(--btn-hi);
+  border-right:  2px solid var(--btn-dsh);
+  border-bottom: 2px solid var(--btn-dsh);
+}
+::-webkit-scrollbar-button {
+  background: var(--cream);
+  border-top:    2px solid var(--btn-hi);
+  border-left:   2px solid var(--btn-hi);
+  border-right:  2px solid var(--btn-dsh);
+  border-bottom: 2px solid var(--btn-dsh);
+  display: block;
+  height: 16px;
+  width: 16px;
+}
+::-webkit-scrollbar-corner { background: var(--cream-dark); }
 
 /* ── RESPONSIVE ──────────────────────────────────────── */
 @media (max-width: 640px) {
