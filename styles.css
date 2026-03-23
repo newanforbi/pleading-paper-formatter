@@ -173,12 +173,14 @@ input[type="text"],
 input[type="tel"],
 input[type="email"],
 textarea {
-  background: var(--cream-light);
-  border: 1px solid var(--rule);
-  border-bottom: 2px solid var(--rule-dark);
-  padding: 0.45em 0.65em;
+  background: #ffffff;
+  border-top:    2px solid var(--btn-sh);
+  border-left:   2px solid var(--btn-sh);
+  border-right:  2px solid var(--btn-hi);
+  border-bottom: 2px solid var(--btn-hi);
+  padding: 3px 5px;
   font-family: var(--font-serif);
-  font-size: 0.9rem;
+  font-size: 12px;
   color: var(--ink);
   width: 100%;
   outline: none;
@@ -188,9 +190,8 @@ textarea {
 
 input:focus,
 textarea:focus {
-  border-color: var(--accent);
-  border-bottom-color: var(--accent);
-  background: #fffdf8;
+  outline: 1px dotted #000000;
+  outline-offset: -3px;
 }
 
 textarea {
@@ -360,11 +361,14 @@ textarea {
 }
 .profile-select {
   font-family: var(--font-serif);
-  font-size: 0.82rem;
-  background: var(--cream-light);
-  border: 1px solid var(--rule-dark);
+  font-size: 11px;
+  background: #ffffff;
+  border-top:   2px solid var(--btn-sh);
+  border-left:  2px solid var(--btn-sh);
+  border-right: 2px solid var(--btn-hi);
+  border-bottom:2px solid var(--btn-hi);
   color: var(--ink);
-  padding: 0.25em 0.5em;
+  padding: 3px 5px;
   min-width: 160px;
 }
 .btn-danger-outline {
