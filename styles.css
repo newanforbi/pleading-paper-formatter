@@ -147,6 +147,15 @@ body {
   border-bottom: 1px solid var(--btn-sh);
 }
 
+/* ── CLASSIC HR DIVIDER ──────────────────────────────── */
+hr {
+  grid-column: 1 / -1;
+  border: none;
+  border-top:    1px solid var(--btn-sh);
+  border-bottom: 1px solid var(--btn-hi);
+  margin: 4px 0;
+}
+
 /* ── FORM GRID ───────────────────────────────────────── */
 .field-grid {
   display: grid;
