@@ -438,6 +438,89 @@ textarea {
   background: var(--rule);
 }
 
+/* ── FORMAT GUIDE ────────────────────────────────────── */
+.format-guide {
+  margin-top: 0.6rem;
+  border: 1px solid var(--rule);
+  background: var(--cream-light);
+  font-size: 0.82rem;
+}
+.format-guide summary {
+  padding: 0.4em 0.75em;
+  cursor: pointer;
+  color: var(--ink-light);
+  font-style: italic;
+  letter-spacing: 0.04em;
+  list-style: none;
+  user-select: none;
+}
+.format-guide summary::-webkit-details-marker { display: none; }
+.format-guide summary::before { content: '▸ '; font-style: normal; }
+details[open].format-guide summary::before { content: '▾ '; }
+.format-guide .guide-body {
+  padding: 0.5em 0.75em 0.75em;
+  border-top: 1px solid var(--rule);
+}
+.guide-intro {
+  margin-bottom: 0.45em;
+  color: var(--ink-mid);
+  font-size: 0.8rem;
+}
+.format-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+}
+.format-table th {
+  text-align: left;
+  color: var(--ink-light);
+  font-weight: bold;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.2em 0.5em;
+  border-bottom: 1px solid var(--rule);
+}
+.format-table td {
+  padding: 0.25em 0.5em;
+  vertical-align: top;
+  color: var(--ink-mid);
+}
+.format-table td code {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  background: var(--cream-dark);
+  padding: 0 0.2em;
+}
+.guide-tip {
+  margin-top: 0.5em;
+  font-size: 0.75rem;
+  color: var(--ink-light);
+  font-style: italic;
+}
+
+/* ── LINE COUNTER ────────────────────────────────────── */
+.line-counter {
+  margin-top: 0.3rem;
+  font-size: 0.74rem;
+  color: var(--ink-light);
+  font-family: var(--font-serif);
+  font-style: italic;
+  min-height: 1.1em;
+}
+.line-counter.warn { color: #a04510; }
+
+/* ── CHAR COUNT BADGE ────────────────────────────────── */
+.char-count {
+  font-size: 0.65rem;
+  color: var(--ink-light);
+  font-style: normal;
+  font-weight: normal;
+  margin-left: 0.3em;
+  letter-spacing: 0;
+}
+.char-count.warn { color: #c04000; font-weight: bold; }
+
 /* ── RESPONSIVE ──────────────────────────────────────── */
 @media (max-width: 640px) {
   .tab-content        { padding: 1.25rem; }
