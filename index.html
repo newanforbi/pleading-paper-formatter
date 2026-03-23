@@ -29,9 +29,11 @@
           <label for="profile-select" class="profiles-label">Saved Profiles</label>
           <select id="profile-select" class="profile-select"><option value="">— select —</option></select>
           <button id="btn-profile-load"   class="btn-secondary btn-small">Load</button>
-          <button id="btn-profile-save"   class="btn-secondary btn-small">Save As…</button>
-          <button id="btn-profile-delete" class="btn-secondary btn-small btn-danger-outline">Delete</button>
-          <button id="btn-profile-export" class="btn-secondary btn-small">Export JSON</button>
+          <button id="btn-profile-save"       class="btn-secondary btn-small">Save As…</button>
+          <button id="btn-profile-duplicate"  class="btn-secondary btn-small">Duplicate</button>
+          <button id="btn-profile-delete"     class="btn-secondary btn-small btn-danger-outline">Delete</button>
+          <button id="btn-profile-export"     class="btn-secondary btn-small">Export JSON</button>
+          <button id="btn-profile-export-all" class="btn-secondary btn-small">Export All</button>
           <label class="btn-secondary btn-small" style="cursor:pointer">Import JSON<input id="profile-import-input" type="file" accept=".json" style="display:none"></label>
         </div>
         <div class="tab-note profile-note">
@@ -41,7 +43,7 @@
         <div class="field-grid">
 
           <div class="field-group field-wide">
-            <label for="prof-plaintiff">Plaintiff / Petitioner Full Name</label>
+            <label for="prof-plaintiff">Plaintiff / Petitioner Full Name <span id="count-plaintiff" class="char-count"></span></label>
             <input type="text" id="prof-plaintiff" placeholder="FULL NAME IN ALL CAPS">
           </div>
 
@@ -93,7 +95,7 @@
           </div>
 
           <div class="field-group">
-            <label for="prof-case-number">Case Number</label>
+            <label for="prof-case-number">Case Number <span id="count-case-number" class="char-count"></span></label>
             <input type="text" id="prof-case-number" placeholder="______________">
           </div>
 
@@ -103,7 +105,7 @@
           </div>
 
           <div class="field-group field-wide">
-            <label for="prof-doc-type">Document Type <span class="field-hint-inline">(caption right column, one line per entry)</span></label>
+            <label for="prof-doc-type">Document Type <span class="field-hint-inline">(caption right column, one line per entry)</span> <span id="count-doc-type" class="char-count"></span></label>
             <textarea id="prof-doc-type" rows="3" placeholder="PETITION FOR WRIT&#10;OF HABEAS CORPUS&#10;(Cal. Penal Code § 1473 et seq.)"></textarea>
           </div>
 
@@ -138,6 +140,23 @@
 1. This Court has jurisdiction pursuant to California Penal Code section 1473(a), which authorizes habeas corpus relief for any person unlawfully restrained of liberty.
 
 Petitioner respectfully submits the following..."></textarea>
+            <div id="pleading-line-counter" class="line-counter"></div>
+            <details class="format-guide">
+              <summary>Formatting guide</summary>
+              <div class="guide-body">
+                <p class="guide-intro">Lines are classified automatically based on content:</p>
+                <table class="format-table">
+                  <thead><tr><th>What you type</th><th>Renders as</th></tr></thead>
+                  <tbody>
+                    <tr><td>Line in ALL CAPS</td><td>Centered bold <strong>Header</strong> (spacing above &amp; below)</td></tr>
+                    <tr><td><code>1.</code> &nbsp;<code>1)</code> &nbsp;<code>(a)</code> &nbsp;<code>•</code> &nbsp;<code>-</code> at line start</td><td>Indented <strong>List item</strong></td></tr>
+                    <tr><td>Any other text</td><td><strong>Paragraph</strong> — first-line indented; consecutive lines are joined</td></tr>
+                    <tr><td><em>(blank line)</em></td><td>Ends current paragraph; separates blocks</td></tr>
+                  </tbody>
+                </table>
+                <p class="guide-tip">Tip: Select text and use the <strong>Header</strong> / <strong>List Item</strong> / <strong>Paragraph</strong> buttons above to reformat it.</p>
+              </div>
+            </details>
           </div>
           <div id="pleading-preview-pane" class="preview-pane" style="display:none">
             <div class="preview-pane-label">Preview</div>
@@ -180,7 +199,7 @@ Petitioner respectfully submits the following..."></textarea>
           <div class="field-group field-wide">
             <label for="cert-recipients">Recipients <span class="field-hint-inline">(blank line between parties)</span></label>
             <textarea id="cert-recipients" rows="6"
-              placeholder="Jane Smith, Deputy Attorney General&#10;Office of the Attorney General&#10;1300 I Street&#10;Sacramento, CA 95814"></textarea>
+              placeholder="Jane Smith, Deputy Attorney General&#10;Office of the Attorney General&#10;1300 I Street&#10;Sacramento, CA 95814&#10;&#10;John Doe, Clerk of Court&#10;Superior Court of California&#10;720 9th Street, Room 102&#10;Sacramento, CA 95814"></textarea>
           </div>
 
           <div class="field-group">
@@ -242,7 +261,7 @@ Petitioner respectfully submits the following..."></textarea>
           <div class="field-group field-wide">
             <label for="pos-recipients">Recipients <span class="field-hint-inline">(blank line between parties)</span></label>
             <textarea id="pos-recipients" rows="6"
-              placeholder="Jane Smith, Deputy Attorney General&#10;Office of the Attorney General&#10;1300 I Street&#10;Sacramento, CA 95814"></textarea>
+              placeholder="Jane Smith, Deputy Attorney General&#10;Office of the Attorney General&#10;1300 I Street&#10;Sacramento, CA 95814&#10;&#10;John Doe, Clerk of Court&#10;Superior Court of California&#10;720 9th Street, Room 102&#10;Sacramento, CA 95814"></textarea>
           </div>
 
           <div class="field-group">

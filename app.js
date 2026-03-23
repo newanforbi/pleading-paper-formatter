@@ -945,6 +945,7 @@ function openPDF(bytes) {
 // ============================================================
 function initFormatToolbar() {
   const ta = document.getElementById('pleading-body');
+  ta.addEventListener('input', updateLineCounter);
   document.querySelectorAll('.fmt-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const fmt   = btn.dataset.fmt;
@@ -974,6 +975,48 @@ function initFormatToolbar() {
       ta.focus();
     });
   });
+}
+
+// ============================================================
+// LINE COUNTER  (body textarea → estimated PDF lines / pages)
+// ============================================================
+function estimateBodyLines(raw) {
+  if (!raw || !raw.trim()) return 0;
+  const CHARS_PER_LINE = 62; // conservative est. for Times 12pt at ~471pt content width
+  const INDENT         = 6;  // ~36pt first-line indent / 6pt avg char
+  const blocks = parseBodyText(raw);
+  let count = 0;
+  for (const block of blocks) {
+    if (block.type === 'HEADER') {
+      count += 2 + (Math.ceil(sanitize(block.text).length / CHARS_PER_LINE) || 1);
+    } else if (block.type === 'PARA') {
+      const words = sanitize(block.text).split(/\s+/).filter(Boolean);
+      if (!words.length) continue;
+      let lines = 1, lineLen = 0, first = true;
+      for (const w of words) {
+        const max = first ? CHARS_PER_LINE - INDENT : CHARS_PER_LINE;
+        if (lineLen === 0)                          { lineLen = w.length; }
+        else if (lineLen + 1 + w.length <= max)    { lineLen += 1 + w.length; }
+        else                                        { lines++; first = false; lineLen = w.length; }
+      }
+      count += lines;
+    } else if (block.type === 'LIST_ITEM') {
+      count += Math.ceil(sanitize(block.text).length / (CHARS_PER_LINE - INDENT)) || 1;
+    }
+  }
+  return count;
+}
+
+function updateLineCounter() {
+  const el = document.getElementById('pleading-line-counter');
+  if (!el) return;
+  const raw   = document.getElementById('pleading-body').value;
+  const lines = estimateBodyLines(raw);
+  if (!lines) { el.textContent = ''; el.className = 'line-counter'; return; }
+  const pages  = Math.ceil(lines / PP.NUM_LINES);
+  const onPage = lines % PP.NUM_LINES || PP.NUM_LINES;
+  el.className   = 'line-counter' + (onPage > 24 ? ' warn' : '');
+  el.textContent = `~${lines} body lines · ~${pages} page${pages !== 1 ? 's' : ''} (28 lines/page)`;
 }
 
 // ============================================================
@@ -1044,6 +1087,30 @@ function initProfiles() {
     const a    = Object.assign(document.createElement('a'), {
       href: url, download: name.replace(/\s+/g, '_') + '.json'
     });
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+  });
+
+  document.getElementById('btn-profile-duplicate').addEventListener('click', () => {
+    const name = document.getElementById('profile-select').value;
+    if (!name) { alert('Select a profile to duplicate.'); return; }
+    const profiles = loadProfiles();
+    if (!profiles[name]) return;
+    let newName = name + ' (copy)';
+    let i = 2;
+    while (profiles[newName]) { newName = name + ' (copy ' + i++ + ')'; }
+    profiles[newName] = { ...profiles[name] };
+    saveProfiles(profiles);
+    refreshProfileSelect();
+    document.getElementById('profile-select').value = newName;
+  });
+
+  document.getElementById('btn-profile-export-all').addEventListener('click', () => {
+    const profiles = loadProfiles();
+    if (!Object.keys(profiles).length) { alert('No saved profiles to export.'); return; }
+    const blob = new Blob([JSON.stringify(profiles, null, 2)], { type: 'application/json' });
+    const url  = URL.createObjectURL(blob);
+    const a    = Object.assign(document.createElement('a'), { href: url, download: 'all-profiles.json' });
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     setTimeout(() => URL.revokeObjectURL(url), 10000);
   });
@@ -1224,6 +1291,107 @@ function initButtons() {
 }
 
 // ============================================================
+// CHARACTER COUNT BADGES
+// ============================================================
+function initCharCounts() {
+  function bind(inputId, badgeId, warnAt) {
+    const input = document.getElementById(inputId);
+    const badge = document.getElementById(badgeId);
+    if (!input || !badge) return;
+    function update() {
+      const len = input.value.length;
+      if (!len) { badge.textContent = ''; badge.className = 'char-count'; return; }
+      badge.textContent = len + ' ch';
+      badge.className   = 'char-count' + (len > warnAt ? ' warn' : '');
+    }
+    input.addEventListener('input', update);
+    update();
+  }
+  bind('prof-plaintiff',   'count-plaintiff',   55);
+  bind('prof-case-number', 'count-case-number', 25);
+  // docType is a textarea — warn on longest line length
+  const dtEl  = document.getElementById('prof-doc-type');
+  const dtBdg = document.getElementById('count-doc-type');
+  if (dtEl && dtBdg) {
+    function updateDocType() {
+      const max = Math.max(0, ...dtEl.value.split('\n').map(l => l.length));
+      if (!max) { dtBdg.textContent = ''; dtBdg.className = 'char-count'; return; }
+      dtBdg.textContent = max + ' ch';
+      dtBdg.className   = 'char-count' + (max > 30 ? ' warn' : '');
+    }
+    dtEl.addEventListener('input', updateDocType);
+    updateDocType();
+  }
+}
+
+// ============================================================
+// AUTO-PREVIEW  (refreshes open preview pane after typing)
+// ============================================================
+let _autoPreviewTimer = null;
+function scheduleAutoPreview() {
+  clearTimeout(_autoPreviewTimer);
+  _autoPreviewTimer = setTimeout(async () => {
+    const activeBtn = document.querySelector('.tab-btn.active');
+    if (!activeBtn) return;
+    const tab = activeBtn.dataset.tab;
+    const MAP = {
+      pleading:    ['pleading-preview-pane', 'pleading-preview-frame', 'pleading-status', buildPleadingPDF],
+      certificate: ['cert-preview-pane',     'cert-preview-frame',     'cert-status',     buildCertificatePDF],
+      pos:         ['pos-preview-pane',       'pos-preview-frame',      'pos-status',      buildProofOfServicePDF],
+    };
+    const cfg = MAP[tab];
+    if (!cfg) return;
+    const pane = document.getElementById(cfg[0]);
+    if (!pane || pane.style.display === 'none') return; // only refresh if preview already open
+    const frame  = document.getElementById(cfg[1]);
+    const status = document.getElementById(cfg[2]);
+    const buildFn = cfg[3];
+    status.textContent = 'Updating…';
+    status.className   = 'status-msg';
+    try {
+      const bytes = await buildFn(STATE);
+      const blob  = new Blob([bytes], { type: 'application/pdf' });
+      const url   = URL.createObjectURL(blob);
+      if (frame.src && frame.src.startsWith('blob:')) URL.revokeObjectURL(frame.src);
+      frame.src = url;
+      status.textContent = '';
+    } catch (err) {
+      status.textContent = 'Preview error: ' + err.message;
+      status.className   = 'status-msg error';
+    }
+  }, 700);
+}
+
+function initAutoPreview() {
+  FIELD_MAP.forEach(([id]) => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', scheduleAutoPreview);
+  });
+  document.getElementById('prof-court').addEventListener('change', scheduleAutoPreview);
+  document.getElementById('prof-court-custom').addEventListener('input', scheduleAutoPreview);
+}
+
+// ============================================================
+// KEYBOARD SHORTCUTS
+// ============================================================
+function initKeyboardShortcuts() {
+  document.addEventListener('keydown', e => {
+    if (!(e.ctrlKey || e.metaKey)) return;
+    const tab = document.querySelector('.tab-btn.active')?.dataset.tab;
+    // Ctrl/Cmd+G — download PDF for the active tab
+    if (e.key === 'g' || e.key === 'G') {
+      const IDS = { pleading: 'btn-generate-pleading', certificate: 'btn-generate-cert', pos: 'btn-generate-pos' };
+      if (IDS[tab]) { e.preventDefault(); document.getElementById(IDS[tab])?.click(); }
+    }
+    // Ctrl/Cmd+Shift+S — save profile
+    if (e.shiftKey && (e.key === 's' || e.key === 'S')) {
+      e.preventDefault();
+      document.getElementById('btn-profile-save')?.click();
+    }
+  });
+}
+
+// ============================================================
 // INIT
 // ============================================================
 document.addEventListener('DOMContentLoaded', () => {
@@ -1238,4 +1406,8 @@ document.addEventListener('DOMContentLoaded', () => {
   initProfiles();
   initFormatToolbar();
   initButtons();
+  initCharCounts();
+  initAutoPreview();
+  initKeyboardShortcuts();
+  updateLineCounter();
 });
