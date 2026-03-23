@@ -246,20 +246,31 @@ textarea {
 /* ── BUTTON ──────────────────────────────────────────── */
 .btn-primary {
   background: var(--accent);
-  color: var(--cream-light);
+  color: #ffffff;
   font-family: var(--font-serif);
-  font-size: 0.8rem;
+  font-size: 11px;
   font-weight: bold;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  border: none;
-  padding: 0.6em 2em;
+  border-top:    2px solid #4a7acc;
+  border-left:   2px solid #4a7acc;
+  border-right:  2px solid var(--btn-dsh);
+  border-bottom: 2px solid var(--btn-dsh);
+  padding: 4px 16px;
   cursor: pointer;
   border-radius: 0;
 }
 
 .btn-primary:hover {
   background: var(--accent-hover);
+}
+
+.btn-primary:active {
+  border-top:    2px solid var(--btn-dsh);
+  border-left:   2px solid var(--btn-dsh);
+  border-right:  2px solid #4a7acc;
+  border-bottom: 2px solid #4a7acc;
+  padding: 5px 15px 3px 17px; /* shift content slightly on press */
 }
 
 .btn-primary:disabled {
@@ -291,21 +302,29 @@ textarea {
   margin-bottom: 0.4rem;
 }
 .fmt-btn {
-  background: var(--cream-dark);
-  border: 1px solid var(--rule-dark);
-  color: var(--ink-mid);
+  background: var(--btn-face);
+  border-top:    2px solid var(--btn-hi);
+  border-left:   2px solid var(--btn-hi);
+  border-right:  2px solid var(--btn-dsh);
+  border-bottom: 2px solid var(--btn-dsh);
+  color: var(--ink);
   font-family: var(--font-serif);
-  font-size: 0.72rem;
+  font-size: 10px;
   font-weight: bold;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.03em;
   text-transform: uppercase;
-  padding: 0.25em 0.8em;
+  padding: 3px 10px;
   cursor: pointer;
 }
 .fmt-btn:hover {
-  background: var(--accent);
-  color: var(--cream-light);
-  border-color: var(--accent);
+  background: var(--cream-light);
+  color: var(--accent);
+}
+.fmt-btn:active {
+  border-top:    2px solid var(--btn-dsh);
+  border-left:   2px solid var(--btn-dsh);
+  border-right:  2px solid var(--btn-hi);
+  border-bottom: 2px solid var(--btn-hi);
 }
 .fmt-hint {
   font-size: 0.72rem;
@@ -349,12 +368,11 @@ textarea {
   min-width: 160px;
 }
 .btn-danger-outline {
-  border-color: #8b1a1a;
-  color: #8b1a1a;
+  color: #aa0000;
 }
 .btn-danger-outline:hover {
-  background: #8b1a1a;
-  color: var(--cream-light);
+  background: #cc0000;
+  color: #ffffff;
 }
 
 /* ── PDF PREVIEW ─────────────────────────────────────── */
@@ -396,29 +414,39 @@ textarea {
 
 /* ── SECONDARY BUTTON ────────────────────────────────── */
 .btn-secondary {
-  background: transparent;
-  color: var(--accent);
+  background: var(--btn-face);
+  color: var(--ink);
   font-family: var(--font-serif);
-  font-size: 0.8rem;
+  font-size: 11px;
   font-weight: bold;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  border: 1.5px solid var(--accent);
-  padding: 0.6em 1.5em;
+  border-top:    2px solid var(--btn-hi);
+  border-left:   2px solid var(--btn-hi);
+  border-right:  2px solid var(--btn-dsh);
+  border-bottom: 2px solid var(--btn-dsh);
+  padding: 4px 14px;
   cursor: pointer;
   border-radius: 0;
 }
 .btn-secondary:hover {
-  background: var(--accent);
-  color: var(--cream-light);
+  background: var(--cream-light);
+  color: var(--accent);
+}
+.btn-secondary:active {
+  border-top:    2px solid var(--btn-dsh);
+  border-left:   2px solid var(--btn-dsh);
+  border-right:  2px solid var(--btn-hi);
+  border-bottom: 2px solid var(--btn-hi);
+  padding: 5px 13px 3px 15px;
 }
 .btn-secondary:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 .btn-small {
-  font-size: 0.7rem;
-  padding: 0.35em 1em;
+  font-size: 10px;
+  padding: 3px 8px;
 }
 
 /* ── PROFILE NOTE ROW ────────────────────────────────── */
@@ -440,20 +468,29 @@ textarea {
   flex: 1;
 }
 .btn-today {
-  background: var(--cream-dark);
-  border: 1px solid var(--rule-dark);
-  color: var(--ink-mid);
+  background: var(--btn-face);
+  border-top:    2px solid var(--btn-hi);
+  border-left:   2px solid var(--btn-hi);
+  border-right:  2px solid var(--btn-dsh);
+  border-bottom: 2px solid var(--btn-dsh);
+  color: var(--ink);
   font-family: var(--font-serif);
-  font-size: 0.72rem;
+  font-size: 10px;
   font-weight: bold;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  padding: 0 0.75em;
+  padding: 0 10px;
   cursor: pointer;
   white-space: nowrap;
 }
 .btn-today:hover {
-  background: var(--rule);
+  background: var(--cream-light);
+}
+.btn-today:active {
+  border-top:    2px solid var(--btn-dsh);
+  border-left:   2px solid var(--btn-dsh);
+  border-right:  2px solid var(--btn-hi);
+  border-bottom: 2px solid var(--btn-hi);
 }
 
 /* ── FORMAT GUIDE ────────────────────────────────────── */
