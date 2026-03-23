@@ -1,15 +1,20 @@
 :root {
-  --cream:        #f5f0e8;
-  --cream-dark:   #ede6d6;
-  --cream-light:  #faf7f2;
-  --ink:          #1a1a1a;
-  --ink-mid:      #3a3220;
-  --ink-light:    #6b5e42;
-  --rule:         #c8b896;
-  --rule-dark:    #8b7355;
-  --accent:       #5c3d1e;
-  --accent-hover: #3d2810;
-  --font-serif:   Georgia, 'Times New Roman', serif;
+  --cream:        #d4d0c8;
+  --cream-dark:   #bdb9b0;
+  --cream-light:  #ecebe8;
+  --ink:          #000000;
+  --ink-mid:      #222222;
+  --ink-light:    #555555;
+  --rule:         #a0a0a0;
+  --rule-dark:    #606060;
+  --accent:       #003580;
+  --accent-hover: #001f5b;
+  --gold:         #b8902a;
+  --btn-face:     #d4d0c8;
+  --btn-hi:       #ffffff;
+  --btn-sh:       #808080;
+  --btn-dsh:      #404040;
+  --font-serif:   Verdana, Arial, Tahoma, sans-serif;
   --font-mono:    'Courier New', Courier, monospace;
 }
 
@@ -20,23 +25,26 @@
 }
 
 body {
-  background: var(--cream-dark);
+  background-color: #7a7a8c;
+  background-image: radial-gradient(circle, #505060 1px, transparent 1px);
+  background-size: 3px 3px;
   color: var(--ink);
   font-family: var(--font-serif);
-  font-size: 15px;
-  line-height: 1.55;
+  font-size: 12px;
+  line-height: 1.5;
   min-height: 100vh;
 }
 
 /* ── WRAPPER ─────────────────────────────────────────── */
 .app-wrapper {
-  max-width: 880px;
+  max-width: 800px;
   margin: 0 auto;
   background: var(--cream);
   min-height: 100vh;
-  border-left:  1px solid var(--rule-dark);
-  border-right: 1px solid var(--rule-dark);
-  box-shadow: 0 0 40px rgba(0,0,0,0.12);
+  border-top:    2px solid var(--btn-hi);
+  border-left:   2px solid var(--btn-hi);
+  border-right:  2px solid var(--btn-dsh);
+  border-bottom: 2px solid var(--btn-dsh);
 }
 
 /* ── HEADER ──────────────────────────────────────────── */
@@ -85,7 +93,6 @@ body {
   cursor: pointer;
   letter-spacing: 0.05em;
   margin-bottom: -1px;
-  transition: color 0.15s, border-color 0.15s;
 }
 
 .tab-btn:hover {
@@ -159,7 +166,6 @@ textarea {
   color: var(--ink);
   width: 100%;
   outline: none;
-  transition: border-color 0.15s, background 0.15s;
   border-radius: 0;
   -webkit-appearance: none;
 }
@@ -233,7 +239,6 @@ textarea {
   border: none;
   padding: 0.6em 2em;
   cursor: pointer;
-  transition: background 0.15s;
   border-radius: 0;
 }
 
@@ -280,7 +285,6 @@ textarea {
   text-transform: uppercase;
   padding: 0.25em 0.8em;
   cursor: pointer;
-  transition: background 0.12s, color 0.12s;
 }
 .fmt-btn:hover {
   background: var(--accent);
@@ -386,7 +390,6 @@ textarea {
   border: 1.5px solid var(--accent);
   padding: 0.6em 1.5em;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
   border-radius: 0;
 }
 .btn-secondary:hover {
@@ -432,7 +435,6 @@ textarea {
   padding: 0 0.75em;
   cursor: pointer;
   white-space: nowrap;
-  transition: background 0.15s;
 }
 .btn-today:hover {
   background: var(--rule);
