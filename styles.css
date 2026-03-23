@@ -49,29 +49,33 @@ body {
 
 /* ── HEADER ──────────────────────────────────────────── */
 .app-header {
-  padding: 2rem 2.5rem 1.5rem;
-  border-bottom: 2px solid var(--accent);
-  background: var(--cream-light);
-  background-image: repeating-linear-gradient(
-    transparent, transparent 23px, rgba(139,115,85,0.15) 24px
-  );
+  padding: 14px 20px 12px;
+  background: linear-gradient(180deg, #1a4a8a 0%, #002060 60%, #001040 100%);
+  border-bottom: 3px solid var(--gold);
+  /* subtle scan-line overlay */
+  background-image:
+    repeating-linear-gradient(
+      180deg, transparent, transparent 1px, rgba(0,0,0,0.08) 2px
+    ),
+    linear-gradient(180deg, #1a4a8a 0%, #002060 60%, #001040 100%);
 }
 
 .app-header h1 {
-  font-size: 1.4rem;
+  font-size: 16px;
   font-weight: bold;
-  color: var(--accent);
-  letter-spacing: 0.05em;
+  font-family: 'Arial Black', Arial, Tahoma, sans-serif;
+  color: #ffffff;
+  letter-spacing: 2px;
   text-transform: uppercase;
 }
 
 .app-subtitle {
-  margin-top: 0.3rem;
-  font-size: 0.78rem;
-  color: var(--ink-light);
-  letter-spacing: 0.1em;
+  margin-top: 4px;
+  font-size: 10px;
+  font-family: Verdana, Arial, sans-serif;
+  color: #a8c4e8;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  font-style: italic;
 }
 
 /* ── TAB BAR ─────────────────────────────────────────── */
