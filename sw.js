@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE = 'pleading-v1';
+const CACHE = 'pleading-v2';
 const ASSETS = [
   './',
   './index.html',
