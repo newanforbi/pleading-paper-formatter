@@ -79,6 +79,18 @@ const STATE = {
   posRecipients:   '',
   posSignerName:   '',
   posSignerTitle:  'Plaintiff, In Pro Per',
+  // Declaration fields
+  declDocType:     '',
+  declBody:        '',
+  declExecDate:    '',
+  declExecCity:    '',
+  declSignerName:  '',
+  declSignerTitle: 'Declarant',
+  // Proposed Order fields
+  orderDocType:    '',
+  orderBody:       '',
+  orderJudgeName:  '',
+  orderJudgeTitle: 'Judge of the Superior Court',
 };
 
 const FIELD_MAP = [
@@ -108,6 +120,18 @@ const FIELD_MAP = [
   ['pos-recipients',        'posRecipients'],
   ['pos-signer-name',       'posSignerName'],
   ['pos-signer-title',      'posSignerTitle'],
+  // Declaration
+  ['decl-doc-type',         'declDocType'],
+  ['decl-body',             'declBody'],
+  ['decl-exec-date',        'declExecDate'],
+  ['decl-exec-city',        'declExecCity'],
+  ['decl-signer-name',      'declSignerName'],
+  ['decl-signer-title',     'declSignerTitle'],
+  // Proposed Order
+  ['order-doc-type',        'orderDocType'],
+  ['order-body',            'orderBody'],
+  ['order-judge-name',      'orderJudgeName'],
+  ['order-judge-title',     'orderJudgeTitle'],
 ];
 
 // ============================================================
@@ -642,6 +666,121 @@ async function buildPleadingPDF(state) {
 }
 
 // ============================================================
+// BUILD DECLARATION PDF  (pleading paper format)
+// ============================================================
+async function buildDeclarationPDF(state) {
+  const { PDFDocument, StandardFonts } = PDFLib;
+  const doc = await PDFDocument.create();
+
+  const fonts = {
+    r: await doc.embedFont(StandardFonts.TimesRoman),
+    b: await doc.embedFont(StandardFonts.TimesRomanBold),
+    i: await doc.embedFont(StandardFonts.TimesRomanItalic),
+    h: await doc.embedFont(StandardFonts.Helvetica),
+  };
+
+  // Caption uses declDocType as the right-column title
+  const captionState = { ...state, docType: state.declDocType };
+  const captionLines = buildCaptionLines(captionState, fonts);
+
+  const signerName  = sanitize(state.declSignerName  || state.plaintiff || '');
+  const signerTitle = sanitize(state.declSignerTitle || 'Declarant');
+  const execDate    = sanitize(state.declExecDate    || '_______________');
+  const execCity    = sanitize(state.declExecCity    || '_______________');
+
+  const allBlocks = [
+    { type: 'PARA',  text: `I, ${signerName}, declare:` },
+    ...parseBodyText(state.declBody),
+    { type: 'BLANK' },
+    { type: 'PARA',  text: 'I declare under penalty of perjury under the laws of the State of California that the foregoing is true and correct.' },
+    { type: 'BLANK' },
+    { type: 'PARA',  text: `Executed on ${execDate}, at ${execCity}.` },
+    { type: 'BLANK' },
+    { type: 'BLANK' },
+    { type: 'PARA',  text: '______________________________' },
+    { type: 'PARA',  text: signerName },
+    { type: 'PARA',  text: signerTitle },
+  ];
+
+  const allLines = [...captionLines, ...buildBodyLines(allBlocks, fonts)];
+
+  const pages = [];
+  for (let i = 0; i < allLines.length; i += PP.NUM_LINES) {
+    pages.push(allLines.slice(i, i + PP.NUM_LINES));
+  }
+  if (pages.length === 0) pages.push([]);
+
+  const footerTitle = sanitize(state.footerTitle || 'DECLARATION');
+  for (let pi = 0; pi < pages.length; pi++) {
+    const page      = doc.addPage([PP.PAGE_W, PP.PAGE_H]);
+    const pageLines = pages[pi];
+    drawPageFrame(page, pi + 1, footerTitle, fonts);
+    for (let li = 0; li < pageLines.length; li++) {
+      const y = PP.TEXT_START_Y - li * PP.LINE_SPACING;
+      drawLineAt(page, pageLines[li], y, fonts);
+    }
+  }
+
+  return doc.save();
+}
+
+// ============================================================
+// BUILD PROPOSED ORDER PDF  (pleading paper format)
+// ============================================================
+async function buildProposedOrderPDF(state) {
+  const { PDFDocument, StandardFonts } = PDFLib;
+  const doc = await PDFDocument.create();
+
+  const fonts = {
+    r: await doc.embedFont(StandardFonts.TimesRoman),
+    b: await doc.embedFont(StandardFonts.TimesRomanBold),
+    h: await doc.embedFont(StandardFonts.Helvetica),
+  };
+
+  const captionState = { ...state, docType: state.orderDocType };
+  const captionLines = buildCaptionLines(captionState, fonts);
+
+  const judgeName  = sanitize(state.orderJudgeName  || '');
+  const judgeTitle = sanitize(state.orderJudgeTitle || 'Judge of the Superior Court');
+
+  const allBlocks = [
+    ...parseBodyText(state.orderBody),
+    { type: 'BLANK' },
+    { type: 'BLANK' },
+    { type: 'PARA',  text: 'IT IS SO ORDERED.' },
+    { type: 'BLANK' },
+    { type: 'BLANK' },
+    { type: 'BLANK' },
+    { type: 'PARA',  text: 'Dated: _______________________' },
+    { type: 'BLANK' },
+    { type: 'PARA',  text: '______________________________' },
+    { type: 'PARA',  text: judgeName || 'Judge' },
+    { type: 'PARA',  text: judgeTitle },
+  ];
+
+  const allLines = [...captionLines, ...buildBodyLines(allBlocks, fonts)];
+
+  const pages = [];
+  for (let i = 0; i < allLines.length; i += PP.NUM_LINES) {
+    pages.push(allLines.slice(i, i + PP.NUM_LINES));
+  }
+  if (pages.length === 0) pages.push([]);
+
+  const footerTitle = sanitize(state.footerTitle || '[PROPOSED] ORDER');
+  for (let pi = 0; pi < pages.length; pi++) {
+    const page      = doc.addPage([PP.PAGE_W, PP.PAGE_H]);
+    const pageLines = pages[pi];
+    drawPageFrame(page, pi + 1, footerTitle, fonts);
+    for (let li = 0; li < pageLines.length; li++) {
+      const y = PP.TEXT_START_Y - li * PP.LINE_SPACING;
+      drawLineAt(page, pageLines[li], y, fonts);
+    }
+  }
+
+  return doc.save();
+}
+
+// ============================================================
 // BUILD CERTIFICATE OF SERVICE PDF
 // ============================================================
 async function buildCertificatePDF(state) {
@@ -946,33 +1085,37 @@ function openPDF(bytes) {
 function initFormatToolbar() {
   const ta = document.getElementById('pleading-body');
   ta.addEventListener('input', updateLineCounter);
+
+  const declTa = document.getElementById('decl-body');
+  if (declTa) declTa.addEventListener('input', updateDeclLineCounter);
+
   document.querySelectorAll('.fmt-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      const fmt   = btn.dataset.fmt;
-      const start = ta.selectionStart;
-      const end   = ta.selectionEnd;
-      const text  = ta.value;
-      const sel   = text.slice(start, end);
+      // Use data-target to support multiple format toolbars
+      const targetId = btn.dataset.target || 'pleading-body';
+      const target   = document.getElementById(targetId) || ta;
+      const fmt      = btn.dataset.fmt;
+      const start    = target.selectionStart;
+      const end      = target.selectionEnd;
+      const sel      = target.value.slice(start, end);
 
       let replacement = sel;
       if (fmt === 'header') {
         replacement = sel.toUpperCase();
       } else if (fmt === 'list') {
-        // Prefix each non-empty line with "1. "
         let counter = 1;
         replacement = sel.split('\n').map(line =>
           line.trim() ? (counter++) + '. ' + line.replace(/^\d+[\.\)]\s*/, '') : line
         ).join('\n');
-      } else if (fmt === 'paragraph') {
-        // Strip list prefix if present
+      } else if (fmt === 'paragraph' || fmt === 'para') {
         replacement = sel.split('\n').map(line =>
           line.replace(/^\d+[\.\)]\s+/, '')
         ).join('\n');
       }
 
-      ta.setRangeText(replacement, start, end, 'select');
-      ta.dispatchEvent(new Event('input'));
-      ta.focus();
+      target.setRangeText(replacement, start, end, 'select');
+      target.dispatchEvent(new Event('input'));
+      target.focus();
     });
   });
 }
@@ -1011,6 +1154,18 @@ function updateLineCounter() {
   const el = document.getElementById('pleading-line-counter');
   if (!el) return;
   const raw   = document.getElementById('pleading-body').value;
+  const lines = estimateBodyLines(raw);
+  if (!lines) { el.textContent = ''; el.className = 'line-counter'; return; }
+  const pages  = Math.ceil(lines / PP.NUM_LINES);
+  const onPage = lines % PP.NUM_LINES || PP.NUM_LINES;
+  el.className   = 'line-counter' + (onPage > 24 ? ' warn' : '');
+  el.textContent = `~${lines} body lines · ~${pages} page${pages !== 1 ? 's' : ''} (28 lines/page)`;
+}
+
+function updateDeclLineCounter() {
+  const el = document.getElementById('decl-line-counter');
+  if (!el) return;
+  const raw   = document.getElementById('decl-body').value;
   const lines = estimateBodyLines(raw);
   if (!lines) { el.textContent = ''; el.className = 'line-counter'; return; }
   const pages  = Math.ceil(lines / PP.NUM_LINES);
@@ -1224,30 +1379,54 @@ function initButtons() {
     showPreview('pos-preview-pane', 'pos-preview-frame', 'pos-status', buildProofOfServicePDF)
   );
 
-  // Today buttons for date fields
+  const orderFile = s => 'Proposed_Order_' + (s.plaintiff || 'Document').replace(/\s+/g, '_') + '.pdf';
+  document.getElementById('order-download-btn').addEventListener('click', () =>
+    generate('order-download-btn', 'order-open-btn', 'order-status', buildProposedOrderPDF, orderFile, 'download')
+  );
+  document.getElementById('order-open-btn').addEventListener('click', () =>
+    generate('order-download-btn', 'order-open-btn', 'order-status', buildProposedOrderPDF, orderFile, 'open')
+  );
+  document.getElementById('order-preview-btn').addEventListener('click', () =>
+    showPreview('order-preview-pane', 'order-preview-frame', 'order-status', buildProposedOrderPDF)
+  );
+
+  const declFile = s => 'Declaration_' + (s.plaintiff || 'Document').replace(/\s+/g, '_') + '.pdf';
+  document.getElementById('decl-download-btn').addEventListener('click', () =>
+    generate('decl-download-btn', 'decl-open-btn', 'decl-status', buildDeclarationPDF, declFile, 'download')
+  );
+  document.getElementById('decl-open-btn').addEventListener('click', () =>
+    generate('decl-download-btn', 'decl-open-btn', 'decl-status', buildDeclarationPDF, declFile, 'open')
+  );
+  document.getElementById('decl-preview-btn').addEventListener('click', () =>
+    showPreview('decl-preview-pane', 'decl-preview-frame', 'decl-status', buildDeclarationPDF)
+  );
+
+  // Today buttons — specific IDs (legacy) + generic data-target approach
   document.getElementById('btn-today-service').addEventListener('click', () => {
     const el = document.getElementById('cert-service-date');
-    el.value = todayLong();
-    STATE.serviceDate = el.value;
-    saveState();
+    el.value = todayLong(); STATE.serviceDate = el.value; saveState();
   });
   document.getElementById('btn-today-exec').addEventListener('click', () => {
     const el = document.getElementById('cert-exec-date');
-    el.value = todayLong();
-    STATE.execDate = el.value;
-    saveState();
+    el.value = todayLong(); STATE.execDate = el.value; saveState();
   });
   document.getElementById('btn-today-pos').addEventListener('click', () => {
     const el = document.getElementById('pos-service-date');
-    el.value = todayLong();
-    STATE.posServiceDate = el.value;
-    saveState();
+    el.value = todayLong(); STATE.posServiceDate = el.value; saveState();
   });
   document.getElementById('btn-today-pos-exec').addEventListener('click', () => {
     const el = document.getElementById('pos-exec-date');
-    el.value = todayLong();
-    STATE.posExecDate = el.value;
-    saveState();
+    el.value = todayLong(); STATE.posExecDate = el.value; saveState();
+  });
+  // Generic Today buttons (data-target attribute)
+  document.querySelectorAll('.btn-today[data-target]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const el = document.getElementById(btn.dataset.target);
+      if (!el) return;
+      el.value = todayLong();
+      const entry = FIELD_MAP.find(([id]) => id === btn.dataset.target);
+      if (entry) { STATE[entry[1]] = el.value; saveState(); }
+    });
   });
 
   // Preview buttons
@@ -1335,9 +1514,11 @@ function scheduleAutoPreview() {
     if (!activeBtn) return;
     const tab = activeBtn.dataset.tab;
     const MAP = {
-      pleading:    ['pleading-preview-pane', 'pleading-preview-frame', 'pleading-status', buildPleadingPDF],
-      certificate: ['cert-preview-pane',     'cert-preview-frame',     'cert-status',     buildCertificatePDF],
-      pos:         ['pos-preview-pane',       'pos-preview-frame',      'pos-status',      buildProofOfServicePDF],
+      pleading:     ['pleading-preview-pane', 'pleading-preview-frame', 'pleading-status', buildPleadingPDF],
+      certificate:  ['cert-preview-pane',     'cert-preview-frame',     'cert-status',     buildCertificatePDF],
+      pos:          ['pos-preview-pane',       'pos-preview-frame',      'pos-status',      buildProofOfServicePDF],
+      declaration:  ['decl-preview-pane',      'decl-preview-frame',     'decl-status',     buildDeclarationPDF],
+      order:        ['order-preview-pane',     'order-preview-frame',    'order-status',    buildProposedOrderPDF],
     };
     const cfg = MAP[tab];
     if (!cfg) return;
@@ -1372,6 +1553,176 @@ function initAutoPreview() {
 }
 
 // ============================================================
+// DEADLINE CALCULATOR
+// ============================================================
+function initDeadlineCalculator() {
+  // Fixed CA/federal observed holidays — MM-DD (applied to any year).
+  // Floating holidays (MLK, Presidents, Memorial, Labor, Thanksgiving)
+  // are computed algorithmically below.
+  const FIXED_HOLIDAYS_MD = new Set(['01-01','06-19','07-04','11-11','12-25']);
+
+  function nthWeekdayOfMonth(year, month, weekday, n) {
+    // Returns Date of nth weekday (0=Sun) in given month (1-based). n=1 = first.
+    const d = new Date(year, month - 1, 1);
+    let count = 0;
+    while (d.getMonth() === month - 1) {
+      if (d.getDay() === weekday) { if (++count === n) return new Date(d); }
+      d.setDate(d.getDate() + 1);
+    }
+    return null;
+  }
+
+  function lastWeekdayOfMonth(year, month, weekday) {
+    const d = new Date(year, month, 0); // last day of month
+    while (d.getDay() !== weekday) d.setDate(d.getDate() - 1);
+    return new Date(d);
+  }
+
+  function getFloatingHolidays(year) {
+    const dates = new Set();
+    const fmt = d => `${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    // MLK Jr Day: 3rd Monday of January
+    dates.add(fmt(nthWeekdayOfMonth(year, 1, 1, 3)));
+    // Presidents Day: 3rd Monday of February
+    dates.add(fmt(nthWeekdayOfMonth(year, 2, 1, 3)));
+    // Memorial Day: last Monday of May
+    dates.add(fmt(lastWeekdayOfMonth(year, 5, 1)));
+    // Labor Day: 1st Monday of September
+    dates.add(fmt(nthWeekdayOfMonth(year, 9, 1, 1)));
+    // Thanksgiving: 4th Thursday of November
+    dates.add(fmt(nthWeekdayOfMonth(year, 11, 4, 4)));
+    // Day after Thanksgiving (CA courts often closed)
+    const thx = nthWeekdayOfMonth(year, 11, 4, 4);
+    thx.setDate(thx.getDate() + 1);
+    dates.add(fmt(thx));
+    return dates;
+  }
+
+  const floatingCache = {};
+  function isHoliday(date) {
+    const year = date.getFullYear();
+    if (!floatingCache[year]) floatingCache[year] = getFloatingHolidays(year);
+    const md = String(date.getMonth()+1).padStart(2,'0') + '-' + String(date.getDate()).padStart(2,'0');
+    return FIXED_HOLIDAYS_MD.has(md) || floatingCache[year].has(md);
+  }
+
+  function isCourtDay(date) {
+    const dow = date.getDay();
+    return dow !== 0 && dow !== 6 && !isHoliday(date);
+  }
+
+  function addCourtDays(startDate, n) {
+    const d = new Date(startDate);
+    let remaining = Math.abs(n);
+    const dir = n >= 0 ? 1 : -1;
+    while (remaining > 0) {
+      d.setDate(d.getDate() + dir);
+      if (isCourtDay(d)) remaining--;
+    }
+    return d;
+  }
+
+  function subtractCourtDays(startDate, n) {
+    return addCourtDays(startDate, -n);
+  }
+
+  function addCalendarDays(startDate, n) {
+    const d = new Date(startDate);
+    d.setDate(d.getDate() + n);
+    return d;
+  }
+
+  function fmtDate(date) {
+    return date.toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+  }
+
+  function makeRow(label, date, classes) {
+    const row = document.createElement('div');
+    row.className = 'calc-result-row' + (classes ? ' ' + classes : '');
+    row.innerHTML =
+      `<span class="calc-result-label">${label}</span>` +
+      `<span class="calc-result-date">${fmtDate(date)}</span>`;
+    return row;
+  }
+
+  // ── Hearing-date calculator ──────────────────────────────
+  function updateHearingResults() {
+    const resultsEl = document.getElementById('calc-hearing-results');
+    const dateVal   = document.getElementById('calc-hearing-date').value;
+    const jx        = document.getElementById('calc-jurisdiction').value;
+    resultsEl.innerHTML = '';
+    if (!dateVal) return;
+
+    const hearing = new Date(dateVal + 'T12:00:00'); // noon to avoid DST edge cases
+
+    let rows;
+    if (jx === 'ca-superior') {
+      // California Rules of Court — motions heard on regular law & motion calendar
+      // Opposition due: 9 court days before hearing (CRC 3.1300)
+      // Reply due: 5 court days before hearing
+      // Service by mail adds 5 calendar days (CCP 1013) — so serve opposition by mail
+      // 2 additional court days earlier = file by (opp date - 2 court days) for mail service
+      const oppDate      = subtractCourtDays(hearing, 9);
+      const replyDate    = subtractCourtDays(hearing, 5);
+      const serveOppDate = subtractCourtDays(oppDate, 2); // serve opp 2 court days before opp due
+
+      rows = [
+        { label: 'Serve opposition by mail by',   date: serveOppDate },
+        { label: 'File opposition by',             date: oppDate },
+        { label: 'File reply by',                  date: replyDate },
+        { label: 'Hearing',                        date: hearing, cls: 'calc-result-hearing' },
+      ];
+    } else {
+      // FRCP — federal district court
+      // Opposition: 14 calendar days before hearing (Local Rules vary; 14 is common)
+      // Reply: 7 calendar days before hearing
+      // Service by mail adds 3 calendar days (FRCP 6(d))
+      const oppDate      = addCalendarDays(hearing, -14);
+      const replyDate    = addCalendarDays(hearing, -7);
+      const serveOppDate = addCalendarDays(oppDate, -3);
+
+      rows = [
+        { label: 'Serve opposition by mail by',   date: serveOppDate },
+        { label: 'File opposition by',             date: oppDate },
+        { label: 'File reply by',                  date: replyDate },
+        { label: 'Hearing',                        date: hearing, cls: 'calc-result-hearing' },
+      ];
+    }
+
+    rows.forEach(({ label, date, cls }) => {
+      resultsEl.appendChild(makeRow(label, date, cls));
+    });
+  }
+
+  document.getElementById('calc-hearing-date').addEventListener('input', updateHearingResults);
+  document.getElementById('calc-jurisdiction').addEventListener('change', updateHearingResults);
+
+  // ── Custom offset calculator ─────────────────────────────
+  function updateCustomResult() {
+    const resultEl = document.getElementById('calc-custom-result');
+    const dateVal  = document.getElementById('calc-start-date').value;
+    const daysVal  = document.getElementById('calc-days-offset').value;
+    const dayType  = document.getElementById('calc-day-type').value;
+
+    if (!dateVal || !daysVal || parseInt(daysVal, 10) < 1) {
+      resultEl.style.display = 'none';
+      return;
+    }
+
+    const start = new Date(dateVal + 'T12:00:00');
+    const n     = parseInt(daysVal, 10);
+    const result = dayType === 'court' ? addCourtDays(start, n) : addCalendarDays(start, n);
+
+    resultEl.textContent  = fmtDate(result);
+    resultEl.style.display = '';
+  }
+
+  document.getElementById('calc-start-date').addEventListener('input', updateCustomResult);
+  document.getElementById('calc-days-offset').addEventListener('input', updateCustomResult);
+  document.getElementById('calc-day-type').addEventListener('change', updateCustomResult);
+}
+
+// ============================================================
 // KEYBOARD SHORTCUTS
 // ============================================================
 function initKeyboardShortcuts() {
@@ -1380,7 +1731,7 @@ function initKeyboardShortcuts() {
     const tab = document.querySelector('.tab-btn.active')?.dataset.tab;
     // Ctrl/Cmd+G — download PDF for the active tab
     if (e.key === 'g' || e.key === 'G') {
-      const IDS = { pleading: 'btn-generate-pleading', certificate: 'btn-generate-cert', pos: 'btn-generate-pos' };
+      const IDS = { pleading: 'btn-generate-pleading', certificate: 'btn-generate-cert', pos: 'btn-generate-pos', declaration: 'decl-download-btn', order: 'order-download-btn' };
       if (IDS[tab]) { e.preventDefault(); document.getElementById(IDS[tab])?.click(); }
     }
     // Ctrl/Cmd+Shift+S — save profile
@@ -1409,5 +1760,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initCharCounts();
   initAutoPreview();
   initKeyboardShortcuts();
+  initDeadlineCalculator();
   updateLineCounter();
+  updateDeclLineCounter();
 });
