@@ -20,6 +20,7 @@
       <button class="tab-btn" data-tab="certificate">Certificate of Service</button>
       <button class="tab-btn" data-tab="pos">Proof of Service</button>
       <button class="tab-btn" data-tab="declaration">Declaration</button>
+      <button class="tab-btn" data-tab="order">[Proposed] Order</button>
     </nav>
 
     <main class="tab-content">
@@ -355,6 +356,51 @@ Petitioner respectfully submits the following..."></textarea>
           </div>
         </div><!-- /.preview-layout -->
       </section><!-- #tab-declaration -->
+
+      <!-- TAB 6: PROPOSED ORDER -->
+      <section id="tab-order" class="tab-pane">
+        <p class="tab-note">Submit with your motion. The judge signs this. Keep it short — state only what you are asking the court to order.</p>
+
+        <div class="tab-toolbar">
+          <button id="order-download-btn" class="btn-primary">Download PDF</button>
+          <button id="order-open-btn" class="btn-secondary">Open / Print</button>
+          <button id="order-preview-btn" class="btn-secondary">Preview</button>
+          <span id="order-status" class="status-msg"></span>
+        </div>
+
+        <div class="preview-layout">
+          <div class="preview-editor">
+
+            <div class="field-group field-wide" style="margin-bottom:10px">
+              <label for="order-doc-type">Order Title <span class="field-hint-inline">(e.g. GRANTING PLAINTIFF'S MOTION TO QUASH)</span></label>
+              <input type="text" id="order-doc-type" placeholder="GRANTING [MOTION NAME]">
+            </div>
+
+            <div class="field-group field-wide" style="margin-bottom:10px">
+              <label for="order-body">Order Body</label>
+              <textarea id="order-body" rows="12"
+                placeholder="IT IS HEREBY ORDERED that&#10;&#10;IT IS FURTHER ORDERED that&#10;&#10;IT IS SO ORDERED."></textarea>
+            </div>
+
+            <div class="field-grid">
+              <div class="field-group">
+                <label for="order-judge-name">Judge Name <span class="field-hint-inline">(optional — leave blank for signature line only)</span></label>
+                <input type="text" id="order-judge-name" placeholder="Hon. ">
+              </div>
+              <div class="field-group">
+                <label for="order-judge-title">Judge Title</label>
+                <input type="text" id="order-judge-title" value="Judge of the Superior Court">
+              </div>
+            </div>
+
+          </div><!-- /.preview-editor -->
+
+          <div class="preview-pane" id="order-preview-pane" style="display:none">
+            <div class="preview-pane-label">Preview</div>
+            <iframe class="preview-frame" id="order-preview-frame" title="Proposed Order Preview"></iframe>
+          </div>
+        </div><!-- /.preview-layout -->
+      </section><!-- #tab-order -->
 
     </main>
   </div>
