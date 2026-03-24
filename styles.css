@@ -639,6 +639,55 @@ details[open].format-guide summary::before { content: '- '; }
 }
 ::-webkit-scrollbar-corner { background: var(--cream-dark); }
 
+/* ── DEADLINE CALCULATOR ─────────────────────────────── */
+.calc-section { margin-bottom: 16px; }
+
+.calc-heading {
+  font-size: 11px;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-mid);
+  background: var(--cream-dark);
+  padding: 3px 8px;
+  border-top:    1px solid var(--btn-hi);
+  border-bottom: 1px solid var(--btn-sh);
+  margin-bottom: 10px;
+}
+
+.calc-results { margin-top: 10px; }
+
+.calc-result-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--cream-dark);
+  font-size: 11px;
+}
+.calc-result-row:nth-child(odd) { background: var(--cream-light); }
+
+.calc-result-label { color: var(--ink-mid); font-weight: bold; }
+.calc-result-date  { font-family: var(--font-mono); color: var(--ink); }
+.calc-result-warn  { color: #aa4400; font-weight: bold; }
+.calc-result-hearing {
+  background: var(--accent) !important;
+  color: #ffffff;
+}
+.calc-result-hearing .calc-result-label,
+.calc-result-hearing .calc-result-date { color: #ffffff; }
+
+.calc-result-single {
+  margin-top: 8px;
+  padding: 6px 10px;
+  background: var(--accent);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: bold;
+  font-family: var(--font-mono);
+  display: none;
+}
+
 /* ── RESPONSIVE ──────────────────────────────────────── */
 @media (max-width: 640px) {
   .tab-content        { padding: 1.25rem; }

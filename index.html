@@ -21,6 +21,7 @@
       <button class="tab-btn" data-tab="pos">Proof of Service</button>
       <button class="tab-btn" data-tab="declaration">Declaration</button>
       <button class="tab-btn" data-tab="order">[Proposed] Order</button>
+      <button class="tab-btn" data-tab="deadlines">Deadlines</button>
     </nav>
 
     <main class="tab-content">
@@ -401,6 +402,55 @@ Petitioner respectfully submits the following..."></textarea>
           </div>
         </div><!-- /.preview-layout -->
       </section><!-- #tab-order -->
+
+      <!-- TAB 7: DEADLINE CALCULATOR -->
+      <section id="tab-deadlines" class="tab-pane">
+        <p class="tab-note">No legal advice — verify deadlines with your local court rules. Court days exclude weekends and major federal/CA holidays.</p>
+
+        <!-- Section 1: Hearing Date -->
+        <div class="calc-section">
+          <div class="calc-heading">Hearing Date &rarr; Deadlines</div>
+          <div class="field-grid">
+            <div class="field-group">
+              <label for="calc-hearing-date">Hearing Date</label>
+              <input type="date" id="calc-hearing-date">
+            </div>
+            <div class="field-group">
+              <label for="calc-jurisdiction">Jurisdiction / Rules</label>
+              <select id="calc-jurisdiction" class="profile-select" style="width:100%">
+                <option value="ca-superior">CA Superior Court (CRC)</option>
+                <option value="us-federal">US District Court (FRCP)</option>
+              </select>
+            </div>
+          </div>
+          <div id="calc-hearing-results" class="calc-results"></div>
+        </div>
+
+        <hr>
+
+        <!-- Section 2: Custom offset -->
+        <div class="calc-section">
+          <div class="calc-heading">Add Days to a Date</div>
+          <div class="field-grid">
+            <div class="field-group">
+              <label for="calc-start-date">Start Date</label>
+              <input type="date" id="calc-start-date">
+            </div>
+            <div class="field-group">
+              <label for="calc-days-offset">Days to Add</label>
+              <div style="display:flex;gap:4px">
+                <input type="number" id="calc-days-offset" placeholder="e.g. 30" min="1" style="flex:1">
+                <select id="calc-day-type" class="profile-select">
+                  <option value="calendar">Calendar Days</option>
+                  <option value="court">Court Days</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div id="calc-custom-result" class="calc-result-single"></div>
+        </div>
+
+      </section><!-- #tab-deadlines -->
 
     </main>
   </div>
