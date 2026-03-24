@@ -19,6 +19,7 @@
       <button class="tab-btn" data-tab="pleading">Pleading Paper</button>
       <button class="tab-btn" data-tab="certificate">Certificate of Service</button>
       <button class="tab-btn" data-tab="pos">Proof of Service</button>
+      <button class="tab-btn" data-tab="declaration">Declaration</button>
     </nav>
 
     <main class="tab-content">
@@ -293,6 +294,67 @@ Petitioner respectfully submits the following..."></textarea>
           <iframe id="pos-preview-frame" class="preview-frame"></iframe>
         </div>
       </section>
+
+      <!-- TAB 5: DECLARATION -->
+      <section id="tab-declaration" class="tab-pane">
+        <p class="tab-note">Attach to your motion. Pulls from Case Profile — add your sworn statements below.</p>
+
+        <div class="tab-toolbar">
+          <button id="decl-download-btn" class="btn-primary">Download PDF</button>
+          <button id="decl-open-btn" class="btn-secondary">Open / Print</button>
+          <button id="decl-preview-btn" class="btn-secondary">Preview</button>
+          <span id="decl-status" class="status-msg"></span>
+        </div>
+
+        <div class="preview-layout">
+          <div class="preview-editor">
+
+            <div class="field-group field-wide" style="margin-bottom:10px">
+              <label for="decl-doc-type">Declaration Title <span class="field-hint-inline">(e.g. IN SUPPORT OF MOTION TO QUASH)</span></label>
+              <input type="text" id="decl-doc-type" placeholder="IN SUPPORT OF [MOTION NAME]">
+            </div>
+
+            <div class="format-toolbar" id="decl-format-toolbar">
+              <button class="fmt-btn" data-fmt="header" data-target="decl-body">Header</button>
+              <button class="fmt-btn" data-fmt="list"   data-target="decl-body">List Item</button>
+              <button class="fmt-btn" data-fmt="para"   data-target="decl-body">Paragraph</button>
+              <span class="fmt-hint">Number your paragraphs: <code>1. I am over the age of 18...</code></span>
+            </div>
+
+            <textarea class="body-textarea" id="decl-body" rows="20"
+              placeholder="1. I am over the age of 18 and not a party to this action.&#10;&#10;2. I have personal knowledge of the facts stated herein and if called as a witness could and would testify competently thereto.&#10;&#10;3. "></textarea>
+            <div class="line-counter" id="decl-line-counter"></div>
+
+            <div class="field-grid" style="margin-top:10px">
+              <div class="field-group">
+                <label for="decl-exec-date">Execution Date</label>
+                <div class="input-with-btn">
+                  <input type="text" id="decl-exec-date" placeholder="Month DD, YYYY">
+                  <button class="btn-today btn-small" data-target="decl-exec-date">Today</button>
+                </div>
+              </div>
+              <div class="field-group">
+                <label for="decl-exec-city">Execution City &amp; State</label>
+                <input type="text" id="decl-exec-city" placeholder="City, CA">
+              </div>
+              <div class="field-group">
+                <label for="decl-signer-name">Declarant Name <span class="field-hint-inline">(blank = uses Profile name)</span></label>
+                <input type="text" id="decl-signer-name" placeholder="Leave blank to use Profile name">
+              </div>
+              <div class="field-group">
+                <label for="decl-signer-title">Declarant Title</label>
+                <input type="text" id="decl-signer-title" value="Declarant">
+              </div>
+            </div>
+
+          </div><!-- /.preview-editor -->
+
+          <div class="preview-pane" id="decl-preview-pane" style="display:none">
+            <div class="preview-pane-label">Preview</div>
+            <iframe class="preview-frame" id="decl-preview-frame" title="Declaration Preview"></iframe>
+          </div>
+        </div><!-- /.preview-layout -->
+      </section><!-- #tab-declaration -->
 
     </main>
   </div>
