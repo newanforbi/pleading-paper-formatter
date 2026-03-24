@@ -79,6 +79,18 @@ const STATE = {
   posRecipients:   '',
   posSignerName:   '',
   posSignerTitle:  'Plaintiff, In Pro Per',
+  // Declaration fields
+  declDocType:     '',
+  declBody:        '',
+  declExecDate:    '',
+  declExecCity:    '',
+  declSignerName:  '',
+  declSignerTitle: 'Declarant',
+  // Proposed Order fields
+  orderDocType:    '',
+  orderBody:       '',
+  orderJudgeName:  '',
+  orderJudgeTitle: 'Judge of the Superior Court',
 };
 
 const FIELD_MAP = [
@@ -108,6 +120,18 @@ const FIELD_MAP = [
   ['pos-recipients',        'posRecipients'],
   ['pos-signer-name',       'posSignerName'],
   ['pos-signer-title',      'posSignerTitle'],
+  // Declaration
+  ['decl-doc-type',         'declDocType'],
+  ['decl-body',             'declBody'],
+  ['decl-exec-date',        'declExecDate'],
+  ['decl-exec-city',        'declExecCity'],
+  ['decl-signer-name',      'declSignerName'],
+  ['decl-signer-title',     'declSignerTitle'],
+  // Proposed Order
+  ['order-doc-type',        'orderDocType'],
+  ['order-body',            'orderBody'],
+  ['order-judge-name',      'orderJudgeName'],
+  ['order-judge-title',     'orderJudgeTitle'],
 ];
 
 // ============================================================
