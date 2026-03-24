@@ -725,6 +725,62 @@ async function buildDeclarationPDF(state) {
 }
 
 // ============================================================
+// BUILD PROPOSED ORDER PDF  (pleading paper format)
+// ============================================================
+async function buildProposedOrderPDF(state) {
+  const { PDFDocument, StandardFonts } = PDFLib;
+  const doc = await PDFDocument.create();
+
+  const fonts = {
+    r: await doc.embedFont(StandardFonts.TimesRoman),
+    b: await doc.embedFont(StandardFonts.TimesRomanBold),
+    h: await doc.embedFont(StandardFonts.Helvetica),
+  };
+
+  const captionState = { ...state, docType: state.orderDocType };
+  const captionLines = buildCaptionLines(captionState, fonts);
+
+  const judgeName  = sanitize(state.orderJudgeName  || '');
+  const judgeTitle = sanitize(state.orderJudgeTitle || 'Judge of the Superior Court');
+
+  const allBlocks = [
+    ...parseBodyText(state.orderBody),
+    { type: 'BLANK' },
+    { type: 'BLANK' },
+    { type: 'PARA',  text: 'IT IS SO ORDERED.' },
+    { type: 'BLANK' },
+    { type: 'BLANK' },
+    { type: 'BLANK' },
+    { type: 'PARA',  text: 'Dated: _______________________' },
+    { type: 'BLANK' },
+    { type: 'PARA',  text: '______________________________' },
+    { type: 'PARA',  text: judgeName || 'Judge' },
+    { type: 'PARA',  text: judgeTitle },
+  ];
+
+  const allLines = [...captionLines, ...buildBodyLines(allBlocks, fonts)];
+
+  const pages = [];
+  for (let i = 0; i < allLines.length; i += PP.NUM_LINES) {
+    pages.push(allLines.slice(i, i + PP.NUM_LINES));
+  }
+  if (pages.length === 0) pages.push([]);
+
+  const footerTitle = sanitize(state.footerTitle || '[PROPOSED] ORDER');
+  for (let pi = 0; pi < pages.length; pi++) {
+    const page      = doc.addPage([PP.PAGE_W, PP.PAGE_H]);
+    const pageLines = pages[pi];
+    drawPageFrame(page, pi + 1, footerTitle, fonts);
+    for (let li = 0; li < pageLines.length; li++) {
+      const y = PP.TEXT_START_Y - li * PP.LINE_SPACING;
+      drawLineAt(page, pageLines[li], y, fonts);
+    }
+  }
+
+  return doc.save();
+}
+
+// ============================================================
 // BUILD CERTIFICATE OF SERVICE PDF
 // ============================================================
 async function buildCertificatePDF(state) {
@@ -1323,6 +1379,17 @@ function initButtons() {
     showPreview('pos-preview-pane', 'pos-preview-frame', 'pos-status', buildProofOfServicePDF)
   );
 
+  const orderFile = s => 'Proposed_Order_' + (s.plaintiff || 'Document').replace(/\s+/g, '_') + '.pdf';
+  document.getElementById('order-download-btn').addEventListener('click', () =>
+    generate('order-download-btn', 'order-open-btn', 'order-status', buildProposedOrderPDF, orderFile, 'download')
+  );
+  document.getElementById('order-open-btn').addEventListener('click', () =>
+    generate('order-download-btn', 'order-open-btn', 'order-status', buildProposedOrderPDF, orderFile, 'open')
+  );
+  document.getElementById('order-preview-btn').addEventListener('click', () =>
+    showPreview('order-preview-pane', 'order-preview-frame', 'order-status', buildProposedOrderPDF)
+  );
+
   const declFile = s => 'Declaration_' + (s.plaintiff || 'Document').replace(/\s+/g, '_') + '.pdf';
   document.getElementById('decl-download-btn').addEventListener('click', () =>
     generate('decl-download-btn', 'decl-open-btn', 'decl-status', buildDeclarationPDF, declFile, 'download')
@@ -1451,6 +1518,7 @@ function scheduleAutoPreview() {
       certificate:  ['cert-preview-pane',     'cert-preview-frame',     'cert-status',     buildCertificatePDF],
       pos:          ['pos-preview-pane',       'pos-preview-frame',      'pos-status',      buildProofOfServicePDF],
       declaration:  ['decl-preview-pane',      'decl-preview-frame',     'decl-status',     buildDeclarationPDF],
+      order:        ['order-preview-pane',     'order-preview-frame',    'order-status',    buildProposedOrderPDF],
     };
     const cfg = MAP[tab];
     if (!cfg) return;
@@ -1493,7 +1561,7 @@ function initKeyboardShortcuts() {
     const tab = document.querySelector('.tab-btn.active')?.dataset.tab;
     // Ctrl/Cmd+G — download PDF for the active tab
     if (e.key === 'g' || e.key === 'G') {
-      const IDS = { pleading: 'btn-generate-pleading', certificate: 'btn-generate-cert', pos: 'btn-generate-pos', declaration: 'decl-download-btn' };
+      const IDS = { pleading: 'btn-generate-pleading', certificate: 'btn-generate-cert', pos: 'btn-generate-pos', declaration: 'decl-download-btn', order: 'order-download-btn' };
       if (IDS[tab]) { e.preventDefault(); document.getElementById(IDS[tab])?.click(); }
     }
     // Ctrl/Cmd+Shift+S — save profile
