@@ -666,6 +666,65 @@ async function buildPleadingPDF(state) {
 }
 
 // ============================================================
+// BUILD DECLARATION PDF  (pleading paper format)
+// ============================================================
+async function buildDeclarationPDF(state) {
+  const { PDFDocument, StandardFonts } = PDFLib;
+  const doc = await PDFDocument.create();
+
+  const fonts = {
+    r: await doc.embedFont(StandardFonts.TimesRoman),
+    b: await doc.embedFont(StandardFonts.TimesRomanBold),
+    i: await doc.embedFont(StandardFonts.TimesRomanItalic),
+    h: await doc.embedFont(StandardFonts.Helvetica),
+  };
+
+  // Caption uses declDocType as the right-column title
+  const captionState = { ...state, docType: state.declDocType };
+  const captionLines = buildCaptionLines(captionState, fonts);
+
+  const signerName  = sanitize(state.declSignerName  || state.plaintiff || '');
+  const signerTitle = sanitize(state.declSignerTitle || 'Declarant');
+  const execDate    = sanitize(state.declExecDate    || '_______________');
+  const execCity    = sanitize(state.declExecCity    || '_______________');
+
+  const allBlocks = [
+    { type: 'PARA',  text: `I, ${signerName}, declare:` },
+    ...parseBodyText(state.declBody),
+    { type: 'BLANK' },
+    { type: 'PARA',  text: 'I declare under penalty of perjury under the laws of the State of California that the foregoing is true and correct.' },
+    { type: 'BLANK' },
+    { type: 'PARA',  text: `Executed on ${execDate}, at ${execCity}.` },
+    { type: 'BLANK' },
+    { type: 'BLANK' },
+    { type: 'PARA',  text: '______________________________' },
+    { type: 'PARA',  text: signerName },
+    { type: 'PARA',  text: signerTitle },
+  ];
+
+  const allLines = [...captionLines, ...buildBodyLines(allBlocks, fonts)];
+
+  const pages = [];
+  for (let i = 0; i < allLines.length; i += PP.NUM_LINES) {
+    pages.push(allLines.slice(i, i + PP.NUM_LINES));
+  }
+  if (pages.length === 0) pages.push([]);
+
+  const footerTitle = sanitize(state.footerTitle || 'DECLARATION');
+  for (let pi = 0; pi < pages.length; pi++) {
+    const page      = doc.addPage([PP.PAGE_W, PP.PAGE_H]);
+    const pageLines = pages[pi];
+    drawPageFrame(page, pi + 1, footerTitle, fonts);
+    for (let li = 0; li < pageLines.length; li++) {
+      const y = PP.TEXT_START_Y - li * PP.LINE_SPACING;
+      drawLineAt(page, pageLines[li], y, fonts);
+    }
+  }
+
+  return doc.save();
+}
+
+// ============================================================
 // BUILD CERTIFICATE OF SERVICE PDF
 // ============================================================
 async function buildCertificatePDF(state) {
@@ -970,33 +1029,37 @@ function openPDF(bytes) {
 function initFormatToolbar() {
   const ta = document.getElementById('pleading-body');
   ta.addEventListener('input', updateLineCounter);
+
+  const declTa = document.getElementById('decl-body');
+  if (declTa) declTa.addEventListener('input', updateDeclLineCounter);
+
   document.querySelectorAll('.fmt-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      const fmt   = btn.dataset.fmt;
-      const start = ta.selectionStart;
-      const end   = ta.selectionEnd;
-      const text  = ta.value;
-      const sel   = text.slice(start, end);
+      // Use data-target to support multiple format toolbars
+      const targetId = btn.dataset.target || 'pleading-body';
+      const target   = document.getElementById(targetId) || ta;
+      const fmt      = btn.dataset.fmt;
+      const start    = target.selectionStart;
+      const end      = target.selectionEnd;
+      const sel      = target.value.slice(start, end);
 
       let replacement = sel;
       if (fmt === 'header') {
         replacement = sel.toUpperCase();
       } else if (fmt === 'list') {
-        // Prefix each non-empty line with "1. "
         let counter = 1;
         replacement = sel.split('\n').map(line =>
           line.trim() ? (counter++) + '. ' + line.replace(/^\d+[\.\)]\s*/, '') : line
         ).join('\n');
-      } else if (fmt === 'paragraph') {
-        // Strip list prefix if present
+      } else if (fmt === 'paragraph' || fmt === 'para') {
         replacement = sel.split('\n').map(line =>
           line.replace(/^\d+[\.\)]\s+/, '')
         ).join('\n');
       }
 
-      ta.setRangeText(replacement, start, end, 'select');
-      ta.dispatchEvent(new Event('input'));
-      ta.focus();
+      target.setRangeText(replacement, start, end, 'select');
+      target.dispatchEvent(new Event('input'));
+      target.focus();
     });
   });
 }
@@ -1035,6 +1098,18 @@ function updateLineCounter() {
   const el = document.getElementById('pleading-line-counter');
   if (!el) return;
   const raw   = document.getElementById('pleading-body').value;
+  const lines = estimateBodyLines(raw);
+  if (!lines) { el.textContent = ''; el.className = 'line-counter'; return; }
+  const pages  = Math.ceil(lines / PP.NUM_LINES);
+  const onPage = lines % PP.NUM_LINES || PP.NUM_LINES;
+  el.className   = 'line-counter' + (onPage > 24 ? ' warn' : '');
+  el.textContent = `~${lines} body lines · ~${pages} page${pages !== 1 ? 's' : ''} (28 lines/page)`;
+}
+
+function updateDeclLineCounter() {
+  const el = document.getElementById('decl-line-counter');
+  if (!el) return;
+  const raw   = document.getElementById('decl-body').value;
   const lines = estimateBodyLines(raw);
   if (!lines) { el.textContent = ''; el.className = 'line-counter'; return; }
   const pages  = Math.ceil(lines / PP.NUM_LINES);
@@ -1248,30 +1323,43 @@ function initButtons() {
     showPreview('pos-preview-pane', 'pos-preview-frame', 'pos-status', buildProofOfServicePDF)
   );
 
-  // Today buttons for date fields
+  const declFile = s => 'Declaration_' + (s.plaintiff || 'Document').replace(/\s+/g, '_') + '.pdf';
+  document.getElementById('decl-download-btn').addEventListener('click', () =>
+    generate('decl-download-btn', 'decl-open-btn', 'decl-status', buildDeclarationPDF, declFile, 'download')
+  );
+  document.getElementById('decl-open-btn').addEventListener('click', () =>
+    generate('decl-download-btn', 'decl-open-btn', 'decl-status', buildDeclarationPDF, declFile, 'open')
+  );
+  document.getElementById('decl-preview-btn').addEventListener('click', () =>
+    showPreview('decl-preview-pane', 'decl-preview-frame', 'decl-status', buildDeclarationPDF)
+  );
+
+  // Today buttons — specific IDs (legacy) + generic data-target approach
   document.getElementById('btn-today-service').addEventListener('click', () => {
     const el = document.getElementById('cert-service-date');
-    el.value = todayLong();
-    STATE.serviceDate = el.value;
-    saveState();
+    el.value = todayLong(); STATE.serviceDate = el.value; saveState();
   });
   document.getElementById('btn-today-exec').addEventListener('click', () => {
     const el = document.getElementById('cert-exec-date');
-    el.value = todayLong();
-    STATE.execDate = el.value;
-    saveState();
+    el.value = todayLong(); STATE.execDate = el.value; saveState();
   });
   document.getElementById('btn-today-pos').addEventListener('click', () => {
     const el = document.getElementById('pos-service-date');
-    el.value = todayLong();
-    STATE.posServiceDate = el.value;
-    saveState();
+    el.value = todayLong(); STATE.posServiceDate = el.value; saveState();
   });
   document.getElementById('btn-today-pos-exec').addEventListener('click', () => {
     const el = document.getElementById('pos-exec-date');
-    el.value = todayLong();
-    STATE.posExecDate = el.value;
-    saveState();
+    el.value = todayLong(); STATE.posExecDate = el.value; saveState();
+  });
+  // Generic Today buttons (data-target attribute)
+  document.querySelectorAll('.btn-today[data-target]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const el = document.getElementById(btn.dataset.target);
+      if (!el) return;
+      el.value = todayLong();
+      const entry = FIELD_MAP.find(([id]) => id === btn.dataset.target);
+      if (entry) { STATE[entry[1]] = el.value; saveState(); }
+    });
   });
 
   // Preview buttons
@@ -1359,9 +1447,10 @@ function scheduleAutoPreview() {
     if (!activeBtn) return;
     const tab = activeBtn.dataset.tab;
     const MAP = {
-      pleading:    ['pleading-preview-pane', 'pleading-preview-frame', 'pleading-status', buildPleadingPDF],
-      certificate: ['cert-preview-pane',     'cert-preview-frame',     'cert-status',     buildCertificatePDF],
-      pos:         ['pos-preview-pane',       'pos-preview-frame',      'pos-status',      buildProofOfServicePDF],
+      pleading:     ['pleading-preview-pane', 'pleading-preview-frame', 'pleading-status', buildPleadingPDF],
+      certificate:  ['cert-preview-pane',     'cert-preview-frame',     'cert-status',     buildCertificatePDF],
+      pos:          ['pos-preview-pane',       'pos-preview-frame',      'pos-status',      buildProofOfServicePDF],
+      declaration:  ['decl-preview-pane',      'decl-preview-frame',     'decl-status',     buildDeclarationPDF],
     };
     const cfg = MAP[tab];
     if (!cfg) return;
@@ -1404,7 +1493,7 @@ function initKeyboardShortcuts() {
     const tab = document.querySelector('.tab-btn.active')?.dataset.tab;
     // Ctrl/Cmd+G — download PDF for the active tab
     if (e.key === 'g' || e.key === 'G') {
-      const IDS = { pleading: 'btn-generate-pleading', certificate: 'btn-generate-cert', pos: 'btn-generate-pos' };
+      const IDS = { pleading: 'btn-generate-pleading', certificate: 'btn-generate-cert', pos: 'btn-generate-pos', declaration: 'decl-download-btn' };
       if (IDS[tab]) { e.preventDefault(); document.getElementById(IDS[tab])?.click(); }
     }
     // Ctrl/Cmd+Shift+S — save profile
@@ -1434,4 +1523,5 @@ document.addEventListener('DOMContentLoaded', () => {
   initAutoPreview();
   initKeyboardShortcuts();
   updateLineCounter();
+  updateDeclLineCounter();
 });
