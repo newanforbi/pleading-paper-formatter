@@ -132,6 +132,7 @@ body {
 
 .tab-pane.tab-active {
   display: block;
+  min-height: calc(100vh - 130px); /* header ~65px + tab bar ~35px + content padding ~30px */
 }
 
 .tab-note {
