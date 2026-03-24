@@ -1553,6 +1553,176 @@ function initAutoPreview() {
 }
 
 // ============================================================
+// DEADLINE CALCULATOR
+// ============================================================
+function initDeadlineCalculator() {
+  // Fixed CA/federal observed holidays — MM-DD (applied to any year).
+  // Floating holidays (MLK, Presidents, Memorial, Labor, Thanksgiving)
+  // are computed algorithmically below.
+  const FIXED_HOLIDAYS_MD = new Set(['01-01','06-19','07-04','11-11','12-25']);
+
+  function nthWeekdayOfMonth(year, month, weekday, n) {
+    // Returns Date of nth weekday (0=Sun) in given month (1-based). n=1 = first.
+    const d = new Date(year, month - 1, 1);
+    let count = 0;
+    while (d.getMonth() === month - 1) {
+      if (d.getDay() === weekday) { if (++count === n) return new Date(d); }
+      d.setDate(d.getDate() + 1);
+    }
+    return null;
+  }
+
+  function lastWeekdayOfMonth(year, month, weekday) {
+    const d = new Date(year, month, 0); // last day of month
+    while (d.getDay() !== weekday) d.setDate(d.getDate() - 1);
+    return new Date(d);
+  }
+
+  function getFloatingHolidays(year) {
+    const dates = new Set();
+    const fmt = d => `${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    // MLK Jr Day: 3rd Monday of January
+    dates.add(fmt(nthWeekdayOfMonth(year, 1, 1, 3)));
+    // Presidents Day: 3rd Monday of February
+    dates.add(fmt(nthWeekdayOfMonth(year, 2, 1, 3)));
+    // Memorial Day: last Monday of May
+    dates.add(fmt(lastWeekdayOfMonth(year, 5, 1)));
+    // Labor Day: 1st Monday of September
+    dates.add(fmt(nthWeekdayOfMonth(year, 9, 1, 1)));
+    // Thanksgiving: 4th Thursday of November
+    dates.add(fmt(nthWeekdayOfMonth(year, 11, 4, 4)));
+    // Day after Thanksgiving (CA courts often closed)
+    const thx = nthWeekdayOfMonth(year, 11, 4, 4);
+    thx.setDate(thx.getDate() + 1);
+    dates.add(fmt(thx));
+    return dates;
+  }
+
+  const floatingCache = {};
+  function isHoliday(date) {
+    const year = date.getFullYear();
+    if (!floatingCache[year]) floatingCache[year] = getFloatingHolidays(year);
+    const md = String(date.getMonth()+1).padStart(2,'0') + '-' + String(date.getDate()).padStart(2,'0');
+    return FIXED_HOLIDAYS_MD.has(md) || floatingCache[year].has(md);
+  }
+
+  function isCourtDay(date) {
+    const dow = date.getDay();
+    return dow !== 0 && dow !== 6 && !isHoliday(date);
+  }
+
+  function addCourtDays(startDate, n) {
+    const d = new Date(startDate);
+    let remaining = Math.abs(n);
+    const dir = n >= 0 ? 1 : -1;
+    while (remaining > 0) {
+      d.setDate(d.getDate() + dir);
+      if (isCourtDay(d)) remaining--;
+    }
+    return d;
+  }
+
+  function subtractCourtDays(startDate, n) {
+    return addCourtDays(startDate, -n);
+  }
+
+  function addCalendarDays(startDate, n) {
+    const d = new Date(startDate);
+    d.setDate(d.getDate() + n);
+    return d;
+  }
+
+  function fmtDate(date) {
+    return date.toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+  }
+
+  function makeRow(label, date, classes) {
+    const row = document.createElement('div');
+    row.className = 'calc-result-row' + (classes ? ' ' + classes : '');
+    row.innerHTML =
+      `<span class="calc-result-label">${label}</span>` +
+      `<span class="calc-result-date">${fmtDate(date)}</span>`;
+    return row;
+  }
+
+  // ── Hearing-date calculator ──────────────────────────────
+  function updateHearingResults() {
+    const resultsEl = document.getElementById('calc-hearing-results');
+    const dateVal   = document.getElementById('calc-hearing-date').value;
+    const jx        = document.getElementById('calc-jurisdiction').value;
+    resultsEl.innerHTML = '';
+    if (!dateVal) return;
+
+    const hearing = new Date(dateVal + 'T12:00:00'); // noon to avoid DST edge cases
+
+    let rows;
+    if (jx === 'ca-superior') {
+      // California Rules of Court — motions heard on regular law & motion calendar
+      // Opposition due: 9 court days before hearing (CRC 3.1300)
+      // Reply due: 5 court days before hearing
+      // Service by mail adds 5 calendar days (CCP 1013) — so serve opposition by mail
+      // 2 additional court days earlier = file by (opp date - 2 court days) for mail service
+      const oppDate      = subtractCourtDays(hearing, 9);
+      const replyDate    = subtractCourtDays(hearing, 5);
+      const serveOppDate = subtractCourtDays(oppDate, 2); // serve opp 2 court days before opp due
+
+      rows = [
+        { label: 'Serve opposition by mail by',   date: serveOppDate },
+        { label: 'File opposition by',             date: oppDate },
+        { label: 'File reply by',                  date: replyDate },
+        { label: 'Hearing',                        date: hearing, cls: 'calc-result-hearing' },
+      ];
+    } else {
+      // FRCP — federal district court
+      // Opposition: 14 calendar days before hearing (Local Rules vary; 14 is common)
+      // Reply: 7 calendar days before hearing
+      // Service by mail adds 3 calendar days (FRCP 6(d))
+      const oppDate      = addCalendarDays(hearing, -14);
+      const replyDate    = addCalendarDays(hearing, -7);
+      const serveOppDate = addCalendarDays(oppDate, -3);
+
+      rows = [
+        { label: 'Serve opposition by mail by',   date: serveOppDate },
+        { label: 'File opposition by',             date: oppDate },
+        { label: 'File reply by',                  date: replyDate },
+        { label: 'Hearing',                        date: hearing, cls: 'calc-result-hearing' },
+      ];
+    }
+
+    rows.forEach(({ label, date, cls }) => {
+      resultsEl.appendChild(makeRow(label, date, cls));
+    });
+  }
+
+  document.getElementById('calc-hearing-date').addEventListener('input', updateHearingResults);
+  document.getElementById('calc-jurisdiction').addEventListener('change', updateHearingResults);
+
+  // ── Custom offset calculator ─────────────────────────────
+  function updateCustomResult() {
+    const resultEl = document.getElementById('calc-custom-result');
+    const dateVal  = document.getElementById('calc-start-date').value;
+    const daysVal  = document.getElementById('calc-days-offset').value;
+    const dayType  = document.getElementById('calc-day-type').value;
+
+    if (!dateVal || !daysVal || parseInt(daysVal, 10) < 1) {
+      resultEl.style.display = 'none';
+      return;
+    }
+
+    const start = new Date(dateVal + 'T12:00:00');
+    const n     = parseInt(daysVal, 10);
+    const result = dayType === 'court' ? addCourtDays(start, n) : addCalendarDays(start, n);
+
+    resultEl.textContent  = fmtDate(result);
+    resultEl.style.display = '';
+  }
+
+  document.getElementById('calc-start-date').addEventListener('input', updateCustomResult);
+  document.getElementById('calc-days-offset').addEventListener('input', updateCustomResult);
+  document.getElementById('calc-day-type').addEventListener('change', updateCustomResult);
+}
+
+// ============================================================
 // KEYBOARD SHORTCUTS
 // ============================================================
 function initKeyboardShortcuts() {
@@ -1590,6 +1760,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initCharCounts();
   initAutoPreview();
   initKeyboardShortcuts();
+  initDeadlineCalculator();
   updateLineCounter();
   updateDeclLineCounter();
 });
