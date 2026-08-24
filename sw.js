@@ -1,11 +1,12 @@
 'use strict';
 
-const CACHE = 'pleading-v2';
+const CACHE = 'pleading-v3';
 const ASSETS = [
   './',
   './index.html',
   './app.js',
   './styles.css',
+  './favicon.svg',
   'https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js',
 ];
 

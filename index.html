@@ -3,7 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Legal Pleading Paper Formatter</title>
+  <meta name="description" content="Browser-based California and federal pleading paper PDF formatter for self-represented litigants. Private — nothing leaves your device.">
+  <title>Pleading Paper Formatter</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
   <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
   <!-- Vercel Web Analytics -->
@@ -15,24 +20,30 @@
 <body>
   <div class="app-wrapper">
     <header class="app-header">
-      <h1>Legal Pleading Paper Formatter</h1>
-      <p class="app-subtitle">State &amp; Federal Courts &middot; pdf-lib &middot; In Propria Persona</p>
+      <div class="brand-block">
+        <h1>Pleading Paper Formatter</h1>
+        <p class="app-subtitle">California &amp; federal court filings · runs entirely in your browser</p>
+      </div>
+      <div class="header-meta">
+        <span id="save-indicator" class="save-indicator" aria-live="polite">Saved</span>
+        <span class="privacy-badge" title="All data stays in this browser"><span>Private · local only</span></span>
+      </div>
     </header>
 
-    <nav class="tab-bar">
-      <button class="tab-btn active" data-tab="profile">Case Profile</button>
-      <button class="tab-btn" data-tab="pleading">Pleading Paper</button>
-      <button class="tab-btn" data-tab="certificate">Certificate of Service</button>
-      <button class="tab-btn" data-tab="pos">Proof of Service</button>
-      <button class="tab-btn" data-tab="declaration">Declaration</button>
-      <button class="tab-btn" data-tab="order">[Proposed] Order</button>
-      <button class="tab-btn" data-tab="deadlines">Deadlines</button>
+    <nav class="tab-bar" role="tablist" aria-label="Document tools">
+      <button class="tab-btn active" role="tab" aria-selected="true" data-tab="profile">Case Profile</button>
+      <button class="tab-btn" role="tab" aria-selected="false" data-tab="pleading">Pleading Paper</button>
+      <button class="tab-btn" role="tab" aria-selected="false" data-tab="declaration">Declaration</button>
+      <button class="tab-btn" role="tab" aria-selected="false" data-tab="order">[Proposed] Order</button>
+      <button class="tab-btn" role="tab" aria-selected="false" data-tab="certificate">Certificate of Service</button>
+      <button class="tab-btn" role="tab" aria-selected="false" data-tab="pos">Proof of Service</button>
+      <button class="tab-btn" role="tab" aria-selected="false" data-tab="deadlines">Deadlines</button>
     </nav>
 
     <main class="tab-content">
 
       <!-- TAB 1: CASE PROFILE -->
-      <section id="tab-profile" class="tab-pane tab-active">
+      <section id="tab-profile" class="tab-pane tab-active" role="tabpanel">
         <div class="profiles-bar">
           <label for="profile-select" class="profiles-label">Saved Profiles</label>
           <select id="profile-select" class="profile-select"><option value="">— select —</option></select>
@@ -45,17 +56,17 @@
           <label class="btn-secondary btn-small" style="cursor:pointer">Import JSON<input id="profile-import-input" type="file" accept=".json" style="display:none"></label>
         </div>
         <div class="tab-note profile-note">
-          <span>Fill this profile once — it populates both documents automatically.</span>
+          <span>Fill this once — every document tab pulls from Case Profile automatically.</span>
           <button id="btn-clear" class="btn-secondary btn-small">Clear / New Case</button>
         </div>
         <div class="field-grid">
+
+          <div class="section-heading">Party information</div>
 
           <div class="field-group field-wide">
             <label for="prof-plaintiff">Plaintiff / Petitioner Full Name <span id="count-plaintiff" class="char-count"></span></label>
             <input type="text" id="prof-plaintiff" placeholder="FULL NAME IN ALL CAPS">
           </div>
-
-          <hr>
 
           <div class="field-group">
             <label for="prof-phone">Phone</label>
@@ -77,7 +88,7 @@
             <input type="text" id="prof-petitioner-label" value="Petitioner, In Propria Persona">
           </div>
 
-          <hr>
+          <div class="section-heading">Court &amp; case</div>
 
           <div class="field-group field-wide">
             <label for="prof-court">Court Name</label>
@@ -111,7 +122,7 @@
             <input type="text" id="prof-case-number" placeholder="______________">
           </div>
 
-          <hr>
+          <div class="section-heading">Caption &amp; footer</div>
 
           <div class="field-group field-wide">
             <label for="prof-respondents">Respondents / Defendants <span class="field-hint-inline">(one per line)</span></label>
@@ -132,11 +143,11 @@
       </section>
 
       <!-- TAB 2: PLEADING PAPER -->
-      <section id="tab-pleading" class="tab-pane">
+      <section id="tab-pleading" class="tab-pane" role="tabpanel">
         <div class="tab-toolbar">
           <button id="btn-generate-pleading" class="btn-primary">Download PDF</button>
           <button id="btn-open-pleading" class="btn-secondary">Open / Print</button>
-          <button id="btn-preview-pleading" class="btn-secondary">Preview</button>
+          <button id="btn-preview-pleading" class="btn-secondary" data-preview-toggle="pleading-preview-pane">Preview</button>
           <span id="pleading-status" class="status-msg"></span>
         </div>
         <div class="preview-layout">
@@ -146,7 +157,7 @@
               <button class="fmt-btn" data-fmt="header"    type="button">Header</button>
               <button class="fmt-btn" data-fmt="list"      type="button">List Item</button>
               <button class="fmt-btn" data-fmt="paragraph" type="button">Paragraph</button>
-              <span class="fmt-hint">Header = ALL CAPS &middot; List = <code>1.</code> prefix &middot; Paragraph = plain text</span>
+              <span class="fmt-hint">Header = ALL CAPS · List = <code>1.</code> prefix · Paragraph = plain text</span>
             </div>
             <textarea id="pleading-body" class="body-textarea" rows="32"
               placeholder="I. JURISDICTION AND VENUE
@@ -173,14 +184,18 @@ Petitioner respectfully submits the following..."></textarea>
             </details>
           </div>
           <div id="pleading-preview-pane" class="preview-pane" style="display:none">
-            <div class="preview-pane-label">Preview</div>
-            <iframe id="pleading-preview-frame" class="preview-frame"></iframe>
+            <div class="preview-pane-header">
+              <div class="preview-pane-label">Preview</div>
+              <button type="button" class="preview-close" data-close-preview="pleading-preview-pane" aria-label="Close preview">×</button>
+            </div>
+            <iframe id="pleading-preview-frame" class="preview-frame" title="Pleading Paper Preview"></iframe>
           </div>
         </div>
       </section>
 
       <!-- TAB 3: CERTIFICATE OF SERVICE -->
-      <section id="tab-certificate" class="tab-pane">
+      <section id="tab-certificate" class="tab-pane" role="tabpanel">
+        <p class="tab-note">Letter-format Certificate of Service. Case caption fields come from Case Profile.</p>
         <div class="field-grid">
 
           <div class="field-group">
@@ -231,17 +246,20 @@ Petitioner respectfully submits the following..."></textarea>
         <div class="tab-toolbar" style="margin-top:1.5rem">
           <button id="btn-generate-cert" class="btn-primary">Download PDF</button>
           <button id="btn-open-cert" class="btn-secondary">Open / Print</button>
-          <button id="btn-preview-cert" class="btn-secondary">Preview</button>
+          <button id="btn-preview-cert" class="btn-secondary" data-preview-toggle="cert-preview-pane">Preview</button>
           <span id="cert-status" class="status-msg"></span>
         </div>
         <div id="cert-preview-pane" class="preview-pane" style="display:none;margin-top:1rem">
-          <div class="preview-pane-label">Preview</div>
-          <iframe id="cert-preview-frame" class="preview-frame"></iframe>
+          <div class="preview-pane-header">
+            <div class="preview-pane-label">Preview</div>
+            <button type="button" class="preview-close" data-close-preview="cert-preview-pane" aria-label="Close preview">×</button>
+          </div>
+          <iframe id="cert-preview-frame" class="preview-frame" title="Certificate of Service Preview"></iframe>
         </div>
       </section>
 
       <!-- TAB 4: PROOF OF SERVICE BY MAIL -->
-      <section id="tab-pos" class="tab-pane">
+      <section id="tab-pos" class="tab-pane" role="tabpanel">
         <p class="tab-note">Proof of Service by Mail — uses Case Profile data plus the fields below.</p>
         <div class="field-grid">
 
@@ -293,23 +311,26 @@ Petitioner respectfully submits the following..."></textarea>
         <div class="tab-toolbar" style="margin-top:1.5rem">
           <button id="btn-generate-pos" class="btn-primary">Download PDF</button>
           <button id="btn-open-pos" class="btn-secondary">Open / Print</button>
-          <button id="btn-preview-pos" class="btn-secondary">Preview</button>
+          <button id="btn-preview-pos" class="btn-secondary" data-preview-toggle="pos-preview-pane">Preview</button>
           <span id="pos-status" class="status-msg"></span>
         </div>
         <div id="pos-preview-pane" class="preview-pane" style="display:none;margin-top:1rem">
-          <div class="preview-pane-label">Preview</div>
-          <iframe id="pos-preview-frame" class="preview-frame"></iframe>
+          <div class="preview-pane-header">
+            <div class="preview-pane-label">Preview</div>
+            <button type="button" class="preview-close" data-close-preview="pos-preview-pane" aria-label="Close preview">×</button>
+          </div>
+          <iframe id="pos-preview-frame" class="preview-frame" title="Proof of Service Preview"></iframe>
         </div>
       </section>
 
       <!-- TAB 5: DECLARATION -->
-      <section id="tab-declaration" class="tab-pane">
+      <section id="tab-declaration" class="tab-pane" role="tabpanel">
         <p class="tab-note">Attach to your motion. Pulls from Case Profile — add your sworn statements below.</p>
 
         <div class="tab-toolbar">
           <button id="decl-download-btn" class="btn-primary">Download PDF</button>
           <button id="decl-open-btn" class="btn-secondary">Open / Print</button>
-          <button id="decl-preview-btn" class="btn-secondary">Preview</button>
+          <button id="decl-preview-btn" class="btn-secondary" data-preview-toggle="decl-preview-pane">Preview</button>
           <span id="decl-status" class="status-msg"></span>
         </div>
 
@@ -357,20 +378,23 @@ Petitioner respectfully submits the following..."></textarea>
           </div><!-- /.preview-editor -->
 
           <div class="preview-pane" id="decl-preview-pane" style="display:none">
-            <div class="preview-pane-label">Preview</div>
+            <div class="preview-pane-header">
+              <div class="preview-pane-label">Preview</div>
+              <button type="button" class="preview-close" data-close-preview="decl-preview-pane" aria-label="Close preview">×</button>
+            </div>
             <iframe class="preview-frame" id="decl-preview-frame" title="Declaration Preview"></iframe>
           </div>
         </div><!-- /.preview-layout -->
       </section><!-- #tab-declaration -->
 
       <!-- TAB 6: PROPOSED ORDER -->
-      <section id="tab-order" class="tab-pane">
+      <section id="tab-order" class="tab-pane" role="tabpanel">
         <p class="tab-note">Submit with your motion. The judge signs this. Keep it short — state only what you are asking the court to order.</p>
 
         <div class="tab-toolbar">
           <button id="order-download-btn" class="btn-primary">Download PDF</button>
           <button id="order-open-btn" class="btn-secondary">Open / Print</button>
-          <button id="order-preview-btn" class="btn-secondary">Preview</button>
+          <button id="order-preview-btn" class="btn-secondary" data-preview-toggle="order-preview-pane">Preview</button>
           <span id="order-status" class="status-msg"></span>
         </div>
 
@@ -402,19 +426,21 @@ Petitioner respectfully submits the following..."></textarea>
           </div><!-- /.preview-editor -->
 
           <div class="preview-pane" id="order-preview-pane" style="display:none">
-            <div class="preview-pane-label">Preview</div>
+            <div class="preview-pane-header">
+              <div class="preview-pane-label">Preview</div>
+              <button type="button" class="preview-close" data-close-preview="order-preview-pane" aria-label="Close preview">×</button>
+            </div>
             <iframe class="preview-frame" id="order-preview-frame" title="Proposed Order Preview"></iframe>
           </div>
         </div><!-- /.preview-layout -->
       </section><!-- #tab-order -->
 
       <!-- TAB 7: DEADLINE CALCULATOR -->
-      <section id="tab-deadlines" class="tab-pane">
+      <section id="tab-deadlines" class="tab-pane" role="tabpanel">
         <p class="tab-note">No legal advice — verify deadlines with your local court rules. Court days exclude weekends and major federal/CA holidays.</p>
 
-        <!-- Section 1: Hearing Date -->
         <div class="calc-section">
-          <div class="calc-heading">Hearing Date &rarr; Deadlines</div>
+          <div class="calc-heading">Hearing Date → Deadlines</div>
           <div class="field-grid">
             <div class="field-group">
               <label for="calc-hearing-date">Hearing Date</label>
@@ -431,9 +457,6 @@ Petitioner respectfully submits the following..."></textarea>
           <div id="calc-hearing-results" class="calc-results"></div>
         </div>
 
-        <hr>
-
-        <!-- Section 2: Custom offset -->
         <div class="calc-section">
           <div class="calc-heading">Add Days to a Date</div>
           <div class="field-grid">
@@ -443,8 +466,8 @@ Petitioner respectfully submits the following..."></textarea>
             </div>
             <div class="field-group">
               <label for="calc-days-offset">Days to Add</label>
-              <div style="display:flex;gap:4px">
-                <input type="number" id="calc-days-offset" placeholder="e.g. 30" min="1" style="flex:1">
+              <div class="days-row">
+                <input type="number" id="calc-days-offset" placeholder="e.g. 30" min="1">
                 <select id="calc-day-type" class="profile-select">
                   <option value="calendar">Calendar Days</option>
                   <option value="court">Court Days</option>
@@ -458,7 +481,17 @@ Petitioner respectfully submits the following..."></textarea>
       </section><!-- #tab-deadlines -->
 
     </main>
+
+    <footer class="app-footer">
+      <div class="shortcut-hints">
+        <span><kbd>Ctrl</kbd>/<kbd>⌘</kbd> + <kbd>G</kbd> Download PDF</span>
+        <span><kbd>Ctrl</kbd>/<kbd>⌘</kbd> + <kbd>Shift</kbd> + <kbd>S</kbd> Save profile</span>
+      </div>
+      <span>Autosaves locally · no account required</span>
+    </footer>
   </div>
+
+  <div id="toast-stack" class="toast-stack" aria-live="polite" aria-relevant="additions"></div>
 
   <script src="app.js" defer></script>
   <script>

@@ -139,8 +139,41 @@ const FIELD_MAP = [
 // ============================================================
 const LS_KEY = 'pleading_state_v1';
 
+let _saveIndicatorTimer = null;
+function flashSaveIndicator() {
+  const el = document.getElementById('save-indicator');
+  if (!el) return;
+  el.textContent = 'Saved';
+  el.classList.add('visible', 'saved');
+  clearTimeout(_saveIndicatorTimer);
+  _saveIndicatorTimer = setTimeout(() => {
+    el.classList.remove('visible');
+  }, 1400);
+}
+
 function saveState() {
-  try { localStorage.setItem(LS_KEY, JSON.stringify(STATE)); } catch (e) {}
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify(STATE));
+    flashSaveIndicator();
+  } catch (e) {}
+}
+
+// ============================================================
+// TOAST NOTIFICATIONS
+// ============================================================
+function showToast(message, type) {
+  const stack = document.getElementById('toast-stack');
+  if (!stack) return;
+  const toast = document.createElement('div');
+  toast.className = 'toast' + (type ? ' ' + type : '');
+  toast.textContent = message;
+  stack.appendChild(toast);
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateY(6px)';
+    toast.style.transition = 'opacity 0.2s, transform 0.2s';
+    setTimeout(() => toast.remove(), 220);
+  }, 2800);
 }
 
 function loadState() {
@@ -222,15 +255,62 @@ function initCourtField() {
 // ============================================================
 // TAB SWITCHING
 // ============================================================
+const VALID_TABS = new Set(['profile', 'pleading', 'certificate', 'pos', 'declaration', 'order', 'deadlines']);
+
+function activateTab(tabId, { updateHash = true } = {}) {
+  if (!VALID_TABS.has(tabId)) tabId = 'profile';
+  const btn = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
+  if (!btn) return;
+
+  document.querySelectorAll('.tab-btn').forEach(b => {
+    const on = b === btn;
+    b.classList.toggle('active', on);
+    b.setAttribute('aria-selected', on ? 'true' : 'false');
+  });
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('tab-active'));
+  const pane = document.getElementById('tab-' + tabId);
+  if (pane) pane.classList.add('tab-active');
+
+  // Keep active tab visible in the scrollable tab bar
+  btn.scrollIntoView({ inline: 'nearest', block: 'nearest', behavior: 'smooth' });
+
+  if (updateHash) {
+    const url = new URL(location.href);
+    url.hash = tabId;
+    history.replaceState(null, '', url);
+  }
+}
+
 function initTabs() {
   document.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('tab-active'));
-      btn.classList.add('active');
-      const pane = document.getElementById('tab-' + btn.dataset.tab);
-      if (pane) pane.classList.add('tab-active');
+    btn.addEventListener('click', () => activateTab(btn.dataset.tab));
+  });
+
+  // Arrow-key navigation within the tab list
+  const tabBar = document.querySelector('.tab-bar');
+  if (tabBar) {
+    tabBar.addEventListener('keydown', e => {
+      if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft' && e.key !== 'Home' && e.key !== 'End') return;
+      const tabs = Array.from(document.querySelectorAll('.tab-btn'));
+      const i = tabs.indexOf(document.activeElement);
+      if (i < 0) return;
+      e.preventDefault();
+      let next = i;
+      if (e.key === 'ArrowRight') next = (i + 1) % tabs.length;
+      if (e.key === 'ArrowLeft')  next = (i - 1 + tabs.length) % tabs.length;
+      if (e.key === 'Home') next = 0;
+      if (e.key === 'End')  next = tabs.length - 1;
+      tabs[next].focus();
+      activateTab(tabs[next].dataset.tab);
     });
+  }
+
+  const fromHash = (location.hash || '').replace(/^#/, '');
+  if (VALID_TABS.has(fromHash)) activateTab(fromHash, { updateHash: false });
+
+  window.addEventListener('hashchange', () => {
+    const id = (location.hash || '').replace(/^#/, '');
+    if (VALID_TABS.has(id)) activateTab(id, { updateHash: false });
   });
 }
 
@@ -1212,16 +1292,18 @@ function initProfiles() {
     saveProfiles(profiles);
     refreshProfileSelect();
     document.getElementById('profile-select').value = name.trim();
+    showToast('Profile "' + name.trim() + '" saved', 'success');
   });
 
   document.getElementById('btn-profile-load').addEventListener('click', () => {
     const name = document.getElementById('profile-select').value;
-    if (!name) return;
+    if (!name) { showToast('Select a profile to load', 'error'); return; }
     const profiles = loadProfiles();
     if (!profiles[name]) return;
     Object.assign(STATE, profiles[name]);
     saveState();
     applyStateToFields();
+    showToast('Loaded "' + name + '"', 'success');
   });
 
   document.getElementById('btn-profile-delete').addEventListener('click', () => {
@@ -1232,6 +1314,7 @@ function initProfiles() {
     delete profiles[name];
     saveProfiles(profiles);
     refreshProfileSelect();
+    showToast('Deleted "' + name + '"');
   });
 
   document.getElementById('btn-profile-export').addEventListener('click', () => {
@@ -1322,6 +1405,7 @@ function initButtons() {
     if (errors.length) {
       status.textContent = errors[0];
       status.className   = 'status-msg error';
+      showToast(errors[0], 'error');
       return;
     }
 
@@ -1336,14 +1420,17 @@ function initButtons() {
       if (mode === 'open') {
         openPDF(bytes);
         status.textContent = 'Opened in new tab.';
+        showToast('Opened PDF in a new tab', 'success');
       } else {
         downloadPDF(bytes, filenameFn(STATE));
         status.textContent = 'PDF downloaded.';
+        showToast('PDF downloaded', 'success');
       }
       status.className = 'status-msg success';
     } catch (err) {
       status.textContent = 'Error: ' + err.message;
       status.className   = 'status-msg error';
+      showToast('Error: ' + err.message, 'error');
       console.error(err);
     } finally {
       if (btn)     btn.disabled     = false;
@@ -1429,15 +1516,42 @@ function initButtons() {
     });
   });
 
-  // Preview buttons
+  function syncPreviewToggle(paneId) {
+    const pane = document.getElementById(paneId);
+    const open = pane && pane.style.display !== 'none';
+    document.querySelectorAll(`[data-preview-toggle="${paneId}"]`).forEach(btn => {
+      btn.classList.toggle('active-toggle', open);
+      btn.setAttribute('aria-pressed', open ? 'true' : 'false');
+    });
+  }
+
+  function closePreview(paneId) {
+    const pane = document.getElementById(paneId);
+    if (!pane) return;
+    const frame = pane.querySelector('.preview-frame');
+    if (frame && frame.src && frame.src.startsWith('blob:')) {
+      URL.revokeObjectURL(frame.src);
+      frame.removeAttribute('src');
+    }
+    pane.style.display = 'none';
+    syncPreviewToggle(paneId);
+  }
+
+  // Preview buttons — second click closes the pane
   async function showPreview(paneId, frameId, statusId, buildFn) {
     const pane   = document.getElementById(paneId);
     const frame  = document.getElementById(frameId);
     const status = document.getElementById(statusId);
+    if (pane && pane.style.display !== 'none') {
+      closePreview(paneId);
+      status.textContent = '';
+      return;
+    }
     const errors = validateState(STATE);
     if (errors.length) {
       status.textContent = errors[0];
       status.className   = 'status-msg error';
+      showToast(errors[0], 'error');
       return;
     }
     status.textContent = 'Generating preview...';
@@ -1450,11 +1564,17 @@ function initButtons() {
       frame.src = url;
       pane.style.display = '';
       status.textContent = '';
+      syncPreviewToggle(paneId);
     } catch (err) {
       status.textContent = 'Error: ' + err.message;
       status.className   = 'status-msg error';
+      showToast('Error: ' + err.message, 'error');
     }
   }
+
+  document.querySelectorAll('[data-close-preview]').forEach(btn => {
+    btn.addEventListener('click', () => closePreview(btn.dataset.closePreview));
+  });
 
   document.getElementById('btn-preview-pleading').addEventListener('click', () =>
     showPreview('pleading-preview-pane', 'pleading-preview-frame', 'pleading-status', buildPleadingPDF)

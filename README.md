@@ -201,7 +201,7 @@ python3 -m http.server
 
 ```
 index.html   — HTML structure and all tab layouts
-styles.css   — Early 2000s / Windows 98-era UI design system
+styles.css   — Modern professional UI design system
 app.js       — All application logic: state, format engine, PDF generators, deadline calculator
 sw.js        — Service worker for offline-first caching
 README.md    — This file
